@@ -21,9 +21,9 @@
     The 2D-style data handling utilizes the potential of GPU to its extent.
 */
 
-#include "viennacl/forwards.h"
+// #include "viennacl/forwards.h"
 // #include "viennacl/detail/matrix_def.hpp"
-#include "viennacl/scalar.hpp"
+// #include "viennacl/scalar.hpp"
 #include "./viennapde_enum.hpp"
 // #include "viennacl/linalg/matrix_operations.hpp"
 // #include "viennacl/linalg/sparse_matrix_operations.hpp"
@@ -62,29 +62,29 @@ namespace viennacl
 template <typename NumericT>
 /** @brief Conversion: std::vector -> varmesh
  * 
- * @param  {std::vector<std::vector<std::vector<NumericT>>>} i_std_varmesh : 
+ * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
  * @param  {viennapde::varmesh<NumericT>} o_varmesh             : 
  */
-void copy(  const std::vector<std::vector<std::vector<NumericT>>> & i_std_varmesh, 
+void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
             viennapde::varmesh<NumericT> *o_varmesh)
 {
-    size_t l_var_index_num = i_std_varmesh.size();
-    for (size_t var_index = 0; var_index < l_var_index_num; var_index++)
-        viennacl::copy(i_std_varmesh[var_index], o_varmesh->data_[var_index]);
+    size_t l_var_index_num = iVarmeshSTL.size();
+    for (size_t layer_i = 0; layer_i < l_var_index_num; layer_i++)
+        viennacl::copy(iVarmeshSTL[layer_i], o_varmesh->data_[layer_i]);
 }
 
 // SECTION 02_002 COPY interface to -> other classes
 template <typename NumericT>
 /** @brief Conversion: varmesh -> std::vector
  * 
- * @param  {viennapde::varmesh<NumericT>} i_varmesh              : 
- * @param  {std::vector<std::vector<std::vector<NumericT>>>} i_std_varmesh : 
+ * @param  {viennapde::varmesh<NumericT>} iVarmesh              : 
+ * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
  */
-void copy(  const viennapde::varmesh<NumericT> & i_varmesh, 
+void copy(  const viennapde::varmesh<NumericT> & iVarmesh, 
             std::vector<std::vector<std::vector<NumericT>>> *o_std_varmesh)
 {
-    for (size_t var_index = 0; var_index < i_varmesh.get_var_num(); var_index++)
-        viennacl::copy(i_varmesh.data_[var_index], o_std_varmesh->at(var_index));
+    for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
+        viennacl::copy(iVarmesh.data_[layer_i], o_std_varmesh->at(layer_i));
 }
 } // namespace viennacl
 
@@ -98,76 +98,70 @@ namespace viennapde
 template <typename NumericT>
 class varmesh
 {
-public:
+public: //TODO: Too many dependency on the public, remove them first and then make it private
     std::vector<viennacl::matrix<NumericT>> data_;    /** @brief The data_ stored in a ViennaCL matrix organized by a STL vector */
 public:
-    inline size_t get_var_num()  const { return data_.size();};
-    inline size_t get_row_num()    const { return data_[0].size1();};
-    inline size_t get_column_num() const { return data_[0].size2();};
+    size_t get_layer_num()  const { return data_.size();};
+    size_t get_row_num()    const { return data_[0].size1();};
+    size_t get_column_num() const { return data_[0].size2();};
 
 public:
     // SECTION 01_001 Constructor & Destructor
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
-     * @param  {size_t} l_var_num   : 
-     * @param  {ssize_t} l_row_num            : 
-     * @param  {ssize_t} l_column_num : 
+     * @param  {size_t} layer_num   : 
+     * @param  {size_t} row_num            : 
+     * @param  {size_t} column_num : 
      */
-    explicit varmesh(size_t l_var_num, ssize_t l_row_num, ssize_t l_column_num);
+    explicit varmesh(size_t layer_num, size_t row_num, size_t column_num);
     /** @brief varmesh constructor 
-     * @param  {std::vector<std::vector<std::vector<NumericT>>>} i_std_varmesh : 
+     * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
      */
-    explicit varmesh(const std::vector<std::vector<std::vector<NumericT>>> & i_std_varmesh);
-    explicit varmesh(const varmesh<NumericT> & i_varmesh);
+    explicit varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL);
+    explicit varmesh(const varmesh<NumericT> & iVarmesh);
     // TODO: Move assignment not yet implemented. 
-    // varmesh(varmesh<NumericT> && i_varmesh);
+    // varmesh& operator= (varmesh & iVarmesh);
+    // varmesh(varmesh<NumericT> && iVarmesh);
     /** @brief ~varmesh Destructor*/
     // ~varmesh();
 
     // SECTION 02_001 COPY interface from other classes
-    friend void viennacl::copy<NumericT>(const std::vector<std::vector<std::vector<NumericT>>> & i_std_varmesh, viennapde::varmesh<NumericT> *o_varmesh);
-    friend void viennacl::copy<NumericT>(  const viennapde::varmesh<NumericT> & i_varmesh, 
+    friend void viennacl::copy<NumericT>(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, viennapde::varmesh<NumericT> *o_varmesh);
+    friend void viennacl::copy<NumericT>(  const viennapde::varmesh<NumericT> & iVarmesh, 
             std::vector<std::vector<std::vector<NumericT>>> *o_std_varmesh);
     
     
 };
 
-// SECTION 01_001 Constructor & Destructor
+// SECTION 01_001 Constructor
 template <typename NumericT>
-varmesh<NumericT>::varmesh(size_t l_var_num, ssize_t l_row_num, ssize_t l_column_num)
+varmesh<NumericT>::varmesh(size_t layer_num, size_t row_num, size_t column_num): data_{layer_num}
 {
-    this->data_.resize(l_var_num);
-    for (size_t var_index = 0; var_index < l_var_num; var_index++)
-        this->data_[var_index].resize(l_row_num, l_column_num);
+    // this->data_.resize(layer_num);
+    for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
+        this->data_[layer_i].resize(row_num, column_num);
 }
 
 template <typename NumericT>
-varmesh<NumericT>::varmesh(const std::vector<std::vector<std::vector<NumericT>>> & i_std_varmesh)
+varmesh<NumericT>::varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL): data_{iVarmeshSTL.size()}
 {
-    this->data_.resize(i_std_varmesh.size());
-    for (size_t var_index = 0; var_index < i_std_varmesh.size(); var_index++)
+    for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
     {
-        this->data_[var_index].resize(i_std_varmesh[0].size(), i_std_varmesh[0][0].size());
-        viennacl::copy(i_std_varmesh[var_index], this->data_[var_index]);
+        this->data_[layer_i].resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+        viennacl::copy(iVarmeshSTL[layer_i], this->data_[layer_i]);
     }
 }
 
 template <typename NumericT>
-varmesh<NumericT>::varmesh(const varmesh<NumericT> & i_varmesh)
+varmesh<NumericT>::varmesh(const varmesh<NumericT> & iVarmesh): data_{iVarmesh.get_layer_num()}
 {
-    this->data_.resize(i_varmesh.get_var_num());
-    for (size_t var_index = 0; var_index < i_varmesh.get_var_num(); var_index++)
+    for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
     {
-        this->data_[var_index].resize(i_varmesh.get_row_num(), i_varmesh.get_column_num());
-        this->data_[var_index] = i_varmesh.data_[var_index];
+        this->data_[layer_i].resize(iVarmesh.get_row_num(), iVarmesh.get_column_num());
+        this->data_[layer_i] = iVarmesh.data_[layer_i];
     }
 }
 
 
-// template <typename NumericT>
-// varmesh<NumericT>::~varmesh()
-// {   
-//     // delete this->data_;
-// }
 
 
 // SECTION 03_002a Vermesh Convolution, utilizing 01_002a
@@ -268,12 +262,12 @@ template <  typename NumericT,
             bool KerElementIdentity = false, 
             OptimizeLevel optimize_level = OptimizeLevel::First>
 void convolve(
-    const viennapde::varmesh<NumericT> & i_varmesh,
+    const viennapde::varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & i_kernel,
     viennapde::varmesh<NumericT> & o_varmesh,
     std::vector<std::pair<size_t, size_t>> ROIrc_vec = std::vector<std::pair<size_t, size_t>>() )
 {
-    o_varmesh.data_.resize(i_varmesh.get_var_num()); // REVIEW This may be the efficiency bottleneck which is safe but slow 
+    o_varmesh.data_.resize(iVarmesh.get_layer_num()); // REVIEW This may be the efficiency bottleneck which is safe but slow 
     // STUB 02 Multiply the scalar and contribute to the final varmesh.
 
     // NOTE Argument ROIrc_vec default empty case, all entries are filled in it here.
@@ -283,9 +277,9 @@ void convolve(
         for (size_t j = 0; j < i_kernel.size2(); j++)
             ROIrc_vec.push_back(std::make_pair<int, int>(i, j));
     }
-    for (size_t var_index=0; var_index< i_varmesh.get_var_num(); var_index++) 
+    for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
         viennapde::convolve<NumericT, ConvolType, KerElementIdentity, optimize_level> 
-            (i_varmesh.data_[var_index], i_kernel, o_varmesh.data_[var_index], ROIrc_vec);
+            (iVarmesh.data_[layer_i], i_kernel, o_varmesh.data_[layer_i], ROIrc_vec);
 } //function void viennapde::convolve
 
 
@@ -305,13 +299,13 @@ template <  typename NumericT,
             bool KerElementIdentity = false, 
             OptimizeLevel optimize_level = OptimizeLevel::First>
 void convolve(
-    viennapde::varmesh<NumericT> & i_varmesh,
+    viennapde::varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & i_kernel,
     std::vector<std::pair<size_t, size_t>> ROIrc_vec = std::vector<std::pair<size_t, size_t>>() )
 {
     // FIXME A strange bug here that if you use make_pair<size_t, size_t> to specify the range of interest, the compiler fails.
-    viennapde::varmesh<NumericT> t_varmesh(i_varmesh);
-    viennapde::convolve<NumericT, ConvolType, KerElementIdentity, optimize_level>(t_varmesh, i_kernel, i_varmesh, ROIrc_vec);
+    viennapde::varmesh<NumericT> t_varmesh(iVarmesh);
+    viennapde::convolve<NumericT, ConvolType, KerElementIdentity, optimize_level>(t_varmesh, i_kernel, iVarmesh, ROIrc_vec);
 } //function varmesh::convolve
 
 
