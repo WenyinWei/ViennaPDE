@@ -60,20 +60,18 @@ namespace viennacl
 {
 // SECTION 02_001 COPY interface from <- other classes
 
-/** @brief Conversion: std::vector -> Varmesh
+/** @brief Conversion: std::vector STL -> Varmesh
  * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
  * @param  {viennapde::Varmesh<NumericT>} oVarmesh             : 
  */
 template <typename NumericT>
 void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
-            viennapde::Varmesh<NumericT> *oVarmesh)
-{
-    oVarmesh.resize(iVarmeshSTL.size());
+            viennapde::Varmesh<NumericT> & oVarmesh)
+{   
+    oVarmesh.data_->resize(iVarmeshSTL.size());
     for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {
-        // FIXME: I am not sure which one is the rowN and which one is the colN.
-        // oVarmesh->data_[layer_i].resize(iVarmeshSTL[0][0].size(), iVarmeshSTL[0].size());
-        viennacl::copy(iVarmeshSTL[layer_i], oVarmesh->data_[layer_i]);
+    {   oVarmesh.data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+        viennacl::copy(iVarmeshSTL[layer_i], oVarmesh.data_->at(layer_i));
     }
 }
 
@@ -85,10 +83,16 @@ void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL,
  */
 template <typename NumericT>
 void copy(  const viennapde::Varmesh<NumericT> & iVarmesh, 
-            std::vector<std::vector<std::vector<NumericT>>> *oVarmeshSTL)
-{
+            std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL)
+{   
+    oVarmeshSTL.resize(iVarmesh.data_->size());
     for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
-        viennacl::copy(iVarmesh.data_[layer_i], oVarmeshSTL->at(layer_i));
+    {
+        oVarmeshSTL[layer_i].resize(iVarmesh.get_row_num());
+        for (size_t row_i = 0; row_i < iVarmesh.get_row_num(); row_i++)
+            oVarmeshSTL[layer_i].at(row_i).resize(iVarmesh.get_column_num());
+        viennacl::copy(iVarmesh.data_->at(layer_i), oVarmeshSTL[layer_i]);
+    }
 }
 } // namespace viennacl
 
@@ -110,8 +114,8 @@ public:
     size_t get_column_num() const { return data_->at(0).size2();};
 
 public:
-    // SECTION 01_001 Constructor 
-    /** @brief Blank Varmesh Constuctor 
+    // SECTION 01_001 Constructor & Destructor
+    /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 
      * @param  {size_t} row_num     : 
      * @param  {size_t} column_num : 
@@ -126,14 +130,18 @@ public:
      */
     explicit Varmesh(const Varmesh<NumericT> & iVarmesh);
     // TODO: Move assignment not yet implemented. 
-    // Varmesh& operator= (Varmesh & iVarmesh);
-    // TODO: Move constructor not yet implemented.
-    // Varmesh(Varmesh<NumericT> && iVarmesh);
+    // varmesh& operator= (varmesh & iVarmesh);
+    // varmesh(varmesh<NumericT> && iVarmesh);
+    /** @brief ~varmesh Destructor*/
+    // ~varmesh();
 
     // SECTION 02_001 COPY interface from other classes
-    friend void viennacl::copy<NumericT>(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, viennapde::Varmesh<NumericT> *oVarmesh);
-    friend void viennacl::copy<NumericT>(  const viennapde::Varmesh<NumericT> & iVarmesh, 
-            std::vector<std::vector<std::vector<NumericT>>> *oVarmeshSTL);
+    friend void viennacl::copy<NumericT>(
+        const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
+        viennapde::Varmesh<NumericT> & oVarmesh);
+    friend void viennacl::copy<NumericT>(
+        const viennapde::Varmesh<NumericT> & iVarmesh, 
+        std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL);
     
     
 };
@@ -142,7 +150,7 @@ public:
 template <typename NumericT>
 Varmesh<NumericT>::Varmesh(size_t layer_num, size_t row_num, size_t column_num): 
     data_{new std::vector<viennacl::matrix<NumericT>> (layer_num)}
-{
+{   
     for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
         this->data_->at(layer_i).resize(row_num, column_num);
 }
@@ -150,10 +158,9 @@ Varmesh<NumericT>::Varmesh(size_t layer_num, size_t row_num, size_t column_num):
 template <typename NumericT>
 Varmesh<NumericT>::Varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL): 
     data_{new std::vector<viennacl::matrix<NumericT>> (iVarmeshSTL.size())}
-{
+{   
     for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {
-        this->data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+    {   this->data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
         viennacl::copy(iVarmeshSTL[layer_i], this->data_->at(layer_i));
     }
 }
@@ -161,10 +168,9 @@ Varmesh<NumericT>::Varmesh(const std::vector<std::vector<std::vector<NumericT>>>
 template <typename NumericT>
 Varmesh<NumericT>::Varmesh(const Varmesh<NumericT> & iVarmesh): 
     data_{new std::vector<viennacl::matrix<NumericT>> (iVarmesh.get_layer_num())}
-{
+{   
     for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
-    {
-        this->data_->at(layer_i).resize(iVarmesh.get_row_num(), iVarmesh.get_column_num());
+    {   this->data_->at(layer_i).resize(iVarmesh.get_row_num(), iVarmesh.get_column_num());
         this->data_->at(layer_i) = iVarmesh.data_->at(layer_i);
     }
 }
