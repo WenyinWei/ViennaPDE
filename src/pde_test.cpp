@@ -43,10 +43,7 @@
 
 int main(int argc,char **argv)
 {
-  
-
-
-  typedef float   vcl_ScalarT;
+  typedef float                         vcl_ScalarT;
   typedef viennacl::vector<vcl_ScalarT> vcl_VectorT;
   typedef viennacl::matrix<vcl_ScalarT> vcl_MatrixT;
 
@@ -75,8 +72,8 @@ int main(int argc,char **argv)
   }
 
 
-  viennapde::varmesh<vcl_ScalarT> vcl_varmesh(stl_varmesh);
-  viennapde::varmesh<vcl_ScalarT> vcl_varmesh_next(stl_varmesh);
+  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh(stl_varmesh);
+  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh_next(stl_varmesh);
 
   std::ofstream file;
   for (size_t i = 0; i * dt < TotalTime; i++)
@@ -84,12 +81,12 @@ int main(int argc,char **argv)
     if (i % 2 ==0) 
     {
       viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh, vcl_varmesh_next, dt, dx);
-      viennacl::copy(vcl_varmesh_next.data_[0], stl_varmesh[0]);
+      viennacl::copy(vcl_varmesh_next.data_->at(0), stl_varmesh[0]);
     }
     else
     {
       viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh_next, vcl_varmesh, dt, dx);
-      viennacl::copy(vcl_varmesh.data_[0], stl_varmesh[0]);
+      viennacl::copy(vcl_varmesh.data_->at(0), stl_varmesh[0]);
     }
     
     file.open(std::to_string(i) + ".csv");
