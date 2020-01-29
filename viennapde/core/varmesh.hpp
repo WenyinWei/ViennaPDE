@@ -106,10 +106,10 @@ public:
     size_t get_column_num() const { return data_[0].size2();};
 
 public:
-    // SECTION 01_001 Constructor & Destructor
+    // SECTION 01_001 Constructor 
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 
-     * @param  {size_t} row_num            : 
+     * @param  {size_t} row_num     : 
      * @param  {size_t} column_num : 
      */
     explicit varmesh(size_t layer_num, size_t row_num, size_t column_num);
@@ -120,9 +120,8 @@ public:
     explicit varmesh(const varmesh<NumericT> & iVarmesh);
     // TODO: Move assignment not yet implemented. 
     // varmesh& operator= (varmesh & iVarmesh);
+    // TODO: Move constructor not yet implemented.
     // varmesh(varmesh<NumericT> && iVarmesh);
-    /** @brief ~varmesh Destructor*/
-    // ~varmesh();
 
     // SECTION 02_001 COPY interface from other classes
     friend void viennacl::copy<NumericT>(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, viennapde::varmesh<NumericT> *o_varmesh);
