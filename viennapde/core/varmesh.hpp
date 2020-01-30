@@ -34,14 +34,22 @@
 // #include "viennacl/traits/handle.hpp"
 // #include "viennacl/traits/row_major.hpp"
 
-
-struct Cord
+template <typename IntegerT>
+struct cord2
 {
-    int rowIDX;
-    int colIDX;
-    int layIDX = 0;
-    explicit Cord(int iRow, int iCol, int iLay): rowIDX{iRow}, colIDX{iCol}, layIDX{iLay} { };
-    explicit Cord(int iRow, int iCol): Cord{iRow, iCol, 0} { };
+    IntegerT x;
+    IntegerT y;
+    explicit cord2(IntegerT iX, IntegerT iY): x{iX}, y{iY} { };
+};
+
+template <typename IntegerT>
+struct cord3
+{
+    IntegerT x;
+    IntegerT y;
+    IntegerT z = 0;
+    explicit cord3(IntegerT iX, IntegerT iY, IntegerT iZ): x{iX}, y{iY}, z{iZ} { };
+    explicit cord3(IntegerT iX, IntegerT iY): cord3{iX, iY, 0} { };
 };
 
 
@@ -106,13 +114,17 @@ namespace viennapde
 template <typename NumericT>
 class Varmesh
 {
+    using MarginIntT = int;
 public: //TODO: Too many dependency on the public, remove them first and then make it private
     std::unique_ptr<std::vector<viennacl::matrix<NumericT>>> data_;    /** @brief The data_ stored in a ViennaCL matrix organized by a STL vector */
+    cord3<MarginIntT> margin_;
 public:
     size_t get_layer_num()  const { return data_->size();};
     size_t get_row_num()    const { return data_->at(0).size1();};
     size_t get_column_num() const { return data_->at(0).size2();};
-
+    cord3<MarginIntT> get_margin() const { return margin_;};
+protected:
+    void set_margin(MarginIntT iX, MarginIntT iY, MarginIntT iZ) {margin_.x=iX; margin_.y=iY; margin_.z=iZ;};
 public:
     // SECTION 01_001 Constructor & Destructor
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
@@ -120,15 +132,34 @@ public:
      * @param  {size_t} row_num     : 
      * @param  {size_t} column_num : 
      */
-    explicit Varmesh(size_t layer_num, size_t row_num, size_t column_num);
+    explicit Varmesh(size_t layer_num, size_t row_num, size_t column_num): 
+        data_{new std::vector<viennacl::matrix<NumericT>> (layer_num)}, margin_{0,0,0}
+        {   
+            for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
+                this->data_->at(layer_i).resize(row_num, column_num);
+        };
     /** @brief Varmesh Constructor <- VarmeshSTL
      * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
      */
-    explicit Varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL);
+    explicit Varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL): 
+        data_{new std::vector<viennacl::matrix<NumericT>> (iVarmeshSTL.size())}, margin_{0,0,0}
+        {   
+            for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
+            {   this->data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+                viennacl::copy(iVarmeshSTL[layer_i], this->data_->at(layer_i));
+            }
+        };
     /** @brief Varmesh Copy Constructor 
      * @param  {Varmesh<NumericT>} iVarmesh : 
      */
-    explicit Varmesh(const Varmesh<NumericT> & iVarmesh);
+    explicit Varmesh(const Varmesh<NumericT> & iVarmesh): 
+        data_{new std::vector<viennacl::matrix<NumericT>> (iVarmesh.get_layer_num())}, margin_{0,0,0}
+        {   
+            for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
+            {   this->data_->at(layer_i).resize(iVarmesh.get_row_num(), iVarmesh.get_column_num());
+                this->data_->at(layer_i) = iVarmesh.data_->at(layer_i);
+            }
+        };
     // TODO: Move assignment not yet implemented. 
     // varmesh& operator= (varmesh & iVarmesh);
     // varmesh(varmesh<NumericT> && iVarmesh);
@@ -136,45 +167,13 @@ public:
     // ~varmesh();
 
     // SECTION 02_001 COPY interface from other classes
-    friend void viennacl::copy<NumericT>(
-        const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
-        viennapde::Varmesh<NumericT> & oVarmesh);
-    friend void viennacl::copy<NumericT>(
-        const viennapde::Varmesh<NumericT> & iVarmesh, 
-        std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL);
+    friend void viennacl::copy<NumericT>(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
+                                        viennapde::Varmesh<NumericT> & oVarmesh);
+    friend void viennacl::copy<NumericT>(const viennapde::Varmesh<NumericT> & iVarmesh, 
+                                        std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL);
     
     
 };
-
-// SECTION 01_001 Constructor
-template <typename NumericT>
-Varmesh<NumericT>::Varmesh(size_t layer_num, size_t row_num, size_t column_num): 
-    data_{new std::vector<viennacl::matrix<NumericT>> (layer_num)}
-{   
-    for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
-        this->data_->at(layer_i).resize(row_num, column_num);
-}
-
-template <typename NumericT>
-Varmesh<NumericT>::Varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL): 
-    data_{new std::vector<viennacl::matrix<NumericT>> (iVarmeshSTL.size())}
-{   
-    for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {   this->data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
-        viennacl::copy(iVarmeshSTL[layer_i], this->data_->at(layer_i));
-    }
-}
-
-template <typename NumericT>
-Varmesh<NumericT>::Varmesh(const Varmesh<NumericT> & iVarmesh): 
-    data_{new std::vector<viennacl::matrix<NumericT>> (iVarmesh.get_layer_num())}
-{   
-    for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
-    {   this->data_->at(layer_i).resize(iVarmesh.get_row_num(), iVarmesh.get_column_num());
-        this->data_->at(layer_i) = iVarmesh.data_->at(layer_i);
-    }
-}
-
 
 
 
@@ -193,13 +192,12 @@ Varmesh<NumericT>::Varmesh(const Varmesh<NumericT> & iVarmesh):
  * vcl_varmesh.convolve(kernel, vec);
  */
 template <  typename NumericT, 
-            viennapde::ConvolutionType ConvolType = EQUIV,
-            bool KerElementIdentity = false>
+            viennapde::ConvolutionType ConvolType = EQUIV>
 void convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel,
     viennacl::matrix<NumericT> & oMatrix,
-    std::vector<std::pair<size_t, size_t>> ROIrc_vec = std::vector<std::pair<size_t, size_t>>() ) // REVIEW: ROIrc_vec may be combined with KerElementIdentity to make the same element compute together
+    std::vector<std::pair<size_t, size_t>> ROIrc_vec = std::vector<std::pair<size_t, size_t>>() ) // REVIEW: ROIrc_vec may be combined with KerEleId to make the same element compute together
 {
     // STUB 01 
     const size_t iKernelHalf1 = (iKernel.size1()-1)/2;
@@ -270,8 +268,7 @@ void convolve(
  * vcl_varmesh.convolve(kernel, vec);
  */
 template <  typename NumericT, 
-            viennapde::ConvolutionType ConvolType = EQUIV,
-            bool KerElementIdentity = false>
+            viennapde::ConvolutionType ConvolType = EQUIV>
 void convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
@@ -289,7 +286,7 @@ void convolve(
             ROIrc_vec.push_back(std::make_pair<int, int>(i, j));
     }
     for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
-        viennapde::convolve<NumericT, ConvolType, KerElementIdentity> 
+        viennapde::convolve<NumericT, ConvolType> 
             (iVarmesh.data_[layer_i], iKernel, oVarmesh.data_[layer_i], ROIrc_vec);
 } //function void viennapde::convolve
 
@@ -306,8 +303,7 @@ void convolve(
  * vcl_varmesh.convolve(kernel);
  */
 template <  typename NumericT, 
-            viennapde::ConvolutionType ConvolType = EQUIV,
-            bool KerElementIdentity = false>
+            viennapde::ConvolutionType ConvolType = EQUIV>
 void convolve(
     viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
@@ -315,7 +311,7 @@ void convolve(
 {
     // FIXME A strange bug here that if you use make_pair<size_t, size_t> to specify the range of interest, the compiler fails.
     viennapde::Varmesh<NumericT> t_varmesh(iVarmesh);
-    viennapde::convolve<NumericT, ConvolType, KerElementIdentity>(t_varmesh, iKernel, iVarmesh, ROIrc_vec);
+    viennapde::convolve<NumericT, ConvolType>(t_varmesh, iKernel, iVarmesh, ROIrc_vec);
 } //function Varmesh::convolve
 
 

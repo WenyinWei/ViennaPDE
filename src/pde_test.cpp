@@ -81,12 +81,12 @@ int main(int argc,char **argv)
     if (i % 2 ==0) 
     {
       viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh, vcl_varmesh_next, dt, dx);
-      viennacl::copy(vcl_varmesh_next.data_->at(0), stl_varmesh[0]);
+      viennacl::copy(vcl_varmesh_next, stl_varmesh);
     }
     else
     {
       viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh_next, vcl_varmesh, dt, dx);
-      viennacl::copy(vcl_varmesh.data_->at(0), stl_varmesh[0]);
+      viennacl::copy(vcl_varmesh, stl_varmesh);
     }
     
     file.open(std::to_string(i) + ".csv");
