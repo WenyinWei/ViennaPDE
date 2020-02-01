@@ -1,6 +1,6 @@
 #pragma once
 /* =========================================================================
-   Copyright (c) 2016-2020, Department of Engineering Physics,
+   Copyright (c) 2010-2020, Department of Engineering Physics,
                             Tsinghua University, Beijing, China.
 
    Portions of this software are copyright by UChicago Argonne, LLC and ViennaCL team.
@@ -16,6 +16,38 @@
    License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
-/** @file viennapde/core/viannapde_enum.hpp
-    @brief Offer constant and enumeration definitions in viennapde library
+/** @file viennapde/core/mvarmesh.hpp
+    @brief Varmesh with margin.
 */
+
+#include "./varmesh.hpp"
+
+
+
+
+// SECTION 01 Define the variable mesh (Varmesh) class
+namespace viennapde
+{
+
+template <typename NumericT>
+class MVarmesh : public Varmesh<NumericT>
+{
+private: 
+    cord3<GridIntT> margin_;
+public:
+    cord3<GridIntT> get_margin() const { return margin_;};
+protected:
+    void set_margin(GridIntT iX, GridIntT iY, GridIntT iZ) {margin_.x=iX; margin_.y=iY; margin_.z=iZ;};
+    
+    
+};
+
+
+
+
+
+
+
+} //namespace viennapde
+
+
