@@ -45,5 +45,5 @@ struct cord3
 };
 
 namespace viennapde{
-    using GridIntT = int;
+    using GridIntT = ssize_t;
 }

@@ -20,7 +20,7 @@
     @brief Implementation of concrete scheme for PDE.
 */
 #include "viennacl/linalg/matrix_operations.hpp"
-#include "viennapde/core/varmesh.hpp"
+#include "viennapde/core/mesh.hpp"
 
 
 // SECTION 01b Declare the image class

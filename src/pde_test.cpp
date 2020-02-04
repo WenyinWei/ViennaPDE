@@ -37,7 +37,7 @@
 
 
 // ViennaPDE headers
-#include "viennapde/core/varmesh.hpp"
+#include "viennapde/core/mesh.hpp"
 #include "viennapde/core/scheme.hpp"
 
 
