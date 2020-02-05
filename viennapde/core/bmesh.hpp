@@ -34,12 +34,13 @@ class BVarmesh : public Varmesh<NumericT>
 {
 private: 
     cord3<GridIntT> margin_;
-protected:
+public:
     // NOTE Extending boundary will only be used while initializing, so the performance is not quite important.
     void extend_boundary(GridIntT iX, GridIntT iY, GridIntT iZ) 
     {
         // Only when the original mesh does not boundary, can the mesh extend its boundary. Otherwise we don't have corresponding functions to extend the boundary (and we don't even have plan to prepare for that). 
-        assert(margin_.x==0 && margin_.y==0 && margin_.z==0); 
+        assert(margin_.x==0 && margin_.y==0 && margin_.z==0);
+        assert(iX >= 0 && iY >= 0 && iZ >= 0);
         margin_.x=iX; margin_.y=iY; margin_.z=iZ;
         const GridIntT  Nx = this->get_row_num(),
                         Ny = this->get_column_num(),
@@ -58,10 +59,11 @@ protected:
             submatrix_to = this->data_->at(i);            
             this->data_->at(i) = tMatrix[i % tMatrixNum];
         }
+        
         for (GridIntT i = 0; i < iZ; i++)
         {
-            this->data_->push_front(viennacl::matrix<NumericT>{Nx+2*iX, Ny+2*iY});
-            this->data_->push_back(viennacl::matrix<NumericT>{Nx+2*iX, Ny+2*iY});
+            this->data_->push_front(viennacl::matrix<NumericT>{(size_t)(Nx+2*iX), (size_t)(Ny+2*iY) });
+            this->data_->push_back(viennacl::matrix<NumericT>{(size_t)(Nx+2*iX), (size_t)(Ny+2*iY)});
         }
     };
 public:
@@ -69,17 +71,23 @@ public:
     GridIntT get_row_boundary() const { return margin_.x; };
     GridIntT get_column_boundary() const { return margin_.y; };
     GridIntT get_layer_boundary() const { return margin_.z; };
+
+    // CTOR
+    explicit BVarmesh(const Varmesh<NumericT> & iVarmesh): Varmesh<NumericT>{iVarmesh}, margin_{0,0,0} {};
+
     // NOTE BC functions (boundary condition) will be used frequently, so their frequency are pretty important.
-    void PeriodicBC() 
+    void BCPeriodic() 
     {
-        const GridIntT [bx, by, bz] =  this->get_size_boundary(); //TODO maybe not syntax right.
+        const GridIntT  bx =  this->get_size_boundary().x,
+                        by =  this->get_size_boundary().y,
+                        bz =  this->get_size_boundary().z;
         const GridIntT  Nx = this->get_row_num(),
                         Ny = this->get_column_num(),
                         Nz = this->get_layer_num();
 
         for (GridIntT i = bz; i < this->get_layer_num() - bz; i++)
         {
-            viennacl::matrix<NumericT> & matThisLayer = this->data_->at(get_layer_num());
+            viennacl::matrix<NumericT> & matThisLayer = this->data_->at(i);
             {// Row Range Override
                 viennacl::range submat_row_range_from(Nx-2*bx, Nx-bx),
                                 submat_column_range_from(by, Ny-by),
@@ -123,13 +131,14 @@ public:
         }
 
         for (GridIntT i = 0; i < bz; i++)
-            this->data->at(i) = this->data->at(i+Nz-2*bz);
+            this->data_->at(i) = this->data_->at(i+Nz-2*bz);
         for (GridIntT i = Nz-bz; i < Nz; i++)
-            this->data->at(i) = this->data->at(i-(Nz-2*bz));
+            this->data_->at(i) = this->data_->at(i-(Nz-2*bz));
     };
 
-    void DirichletBC(); //TODO Not yet implemented
-    void NeumannBC(); //TODO Not yet implemented
+    void BCDirichlet(); //TODO Not yet implemented
+    void BCNeumann(); //TODO Not yet implemented
+
 };
 
 

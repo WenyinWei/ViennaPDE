@@ -48,16 +48,16 @@ int main(int argc,char **argv)
   typedef viennacl::matrix<vcl_ScalarT> vcl_MatrixT;
 
   long pixel_index = 0; 
-  size_t var_num = 1;
-  ssize_t row_num = 1;
-  ssize_t column_num = 201;
+  size_t layer_num = 5;
+  ssize_t row_num = 50;
+  ssize_t column_num = 50;
   vcl_ScalarT TotalTime = 2*3.1415926535;
   vcl_ScalarT dx = 2*3.1415926535/(column_num-1);
   vcl_ScalarT dt = 0.01;
 
-  std::vector< std::vector< std::vector<vcl_ScalarT> > >  stl_varmesh(var_num);
+  std::vector< std::vector< std::vector<vcl_ScalarT> > >  stl_varmesh(layer_num);
 
-  for (size_t var_index=0; var_index< var_num; var_index++)
+  for (size_t var_index=0; var_index< layer_num; var_index++)
   {
     stl_varmesh[var_index].resize(row_num);
     for (ssize_t i=0; i < row_num; ++i) 

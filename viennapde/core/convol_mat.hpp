@@ -36,31 +36,44 @@ enum ConvolutionType
     EQUIV
 };
 
+
 template < typename NumericT, viennapde::ConvolutionType convolT >
-std::pair<size_t, size_t> ConvolOMatSize(
-    const viennacl::matrix<NumericT> & iMatrix,
-    const viennacl::matrix<NumericT> & iKernel)
+std::pair<GridIntT, GridIntT> ConvolOMatSize(
+    const GridIntT MatSize1, const GridIntT MatSize2,
+    const GridIntT KerSize1, const GridIntT KerSize2)
 {
-    const size_t iKernelHalf1 = (iKernel.size1()-1)/2;
-    const size_t iKernelHalf2 = (iKernel.size2()-1)/2;
-    size_t oMatSize1, oMatSize2;
+    assert(MatSize1>=1 && MatSize2>=1 && KerSize1>=1 && KerSize2>=1);
+    assert( KerSize1 % 2 == 1 && KerSize2 % 2 == 1 );
+    const GridIntT iKernelHalf1 = (KerSize1-1)/2;
+    const GridIntT iKernelHalf2 = (KerSize2-1)/2;
+    GridIntT oMatSize1, oMatSize2;
     if constexpr (convolT==ConvolutionType::EQUIV)
     {
-        oMatSize1 = iMatrix.size1();
-        oMatSize2 = iMatrix.size2();
+        oMatSize1 = MatSize1;
+        oMatSize2 = MatSize2;
     }
     else if constexpr (convolT==ConvolutionType::INNER)
     {
-        oMatSize1 = iMatrix.size1() - 2 * iKernelHalf1;
-        oMatSize2 = iMatrix.size2() - 2 * iKernelHalf2;
+        oMatSize1 = MatSize1 - 2 * iKernelHalf1;
+        oMatSize2 = MatSize2 - 2 * iKernelHalf2;
     }
     else if constexpr (convolT==ConvolutionType::OUTER)
     {
-        oMatSize1 = iMatrix.size1() + 2 * iKernelHalf1;
-        oMatSize2 = iMatrix.size2() + 2 * iKernelHalf2;
+        oMatSize1 = MatSize1 + 2 * iKernelHalf1;
+        oMatSize2 = MatSize2 + 2 * iKernelHalf2;
     }
     return std::pair<size_t, size_t>(oMatSize1, oMatSize2);
     
+}
+
+template < typename NumericT, viennapde::ConvolutionType convolT >
+std::pair<GridIntT, GridIntT> ConvolOMatSize(
+    const viennacl::matrix<NumericT> & iMatrix,
+    const viennacl::matrix<NumericT> & iKernel)
+{
+    return ConvolOMatSize<NumericT, convolT>(
+        (GridIntT)iMatrix.size1(), (GridIntT)iMatrix.size2(), 
+        (GridIntT)iKernel.size1(), (GridIntT)iKernel.size2());
 }
 
 // SECTION 03_002a Vermesh Convolution

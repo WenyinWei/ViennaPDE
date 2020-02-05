@@ -21,6 +21,7 @@
     All functions in this file are overloaded of viennapde::convolve working on the Varmesh class. 
     TODO Not yet and verified.
 */
+#include <vector>
 
 #include "viennacl/matrix.hpp"
 #include "./mesh.hpp"
@@ -74,9 +75,9 @@ viennapde::Varmesh<NumericT> & convolve(
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
 void convolve(
-    const viennacl::matrix<NumericT> & iVarmesh,
+    const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
-    viennacl::matrix<NumericT> & oVarmesh, bool clearResult = true) 
+    viennapde::Varmesh<NumericT> & oVarmesh, bool clearResult = true) 
 {
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
@@ -88,10 +89,11 @@ void convolve(
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
 viennapde::Varmesh<NumericT> & convolve(
-    const viennacl::matrix<NumericT> & iVarmesh,
+    const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel) 
 {
-    const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
+    const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(
+        iVarmesh.get_row_num(), iVarmesh.get_column_num(), iKernel.size1(), iKernel.size2());    
     viennacl::matrix<NumericT> *oVarmesh = new viennapde::Varmesh<NumericT> {iVarmesh.get_layer_num(), oMatSize.first, oMatSize.second};
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
@@ -101,6 +103,25 @@ viennapde::Varmesh<NumericT> & convolve(
     return *oVarmesh;
 } //function void viennapde::convolve
 
+
+
+// TODO The following functions are for 3D mesh convolve
+
+template <  typename NumericT, 
+            viennapde::ConvolutionType convolT = EQUIV>
+void convolve(
+    const viennapde::Varmesh<NumericT> & iVarmesh,
+    const std::deque<viennacl::matrix<NumericT>> & iKernel,
+    viennapde::Varmesh<NumericT> & oVarmesh,
+    std::vector<cord2<GridIntT>> & ROIrc_vec, bool clearResult = true)
+{
+    assert( iKernel.size() % 2 == 1 );
+    oVarmesh.data_->resize(iVarmesh.get_layer_num()); 
+    // STUB 02 Multiply the scalar and contribute to the final Varmesh.
+    for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
+        oVarmesh.data_->at(layer_i) 
+        = viennapde::convolve<NumericT, convolT>(iVarmesh.data_->at(layer_i),iKernel, ROIrc_vec, clearResult);
+} //function void viennapde::convolve
 
 } //namespace viennapde
 
