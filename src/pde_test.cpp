@@ -49,36 +49,36 @@ int main(int argc,char **argv)
 
   long pixel_index = 0; 
   size_t layer_num = 5;
-  ssize_t row_num = 50;
+  size_t row_num = 50;
   ssize_t column_num = 50;
-  vcl_ScalarT TotalTime = 2*3.1415926535;
+  vcl_ScalarT TotalTime = 3.1415926535/10;
   vcl_ScalarT dx = 2*3.1415926535/(column_num-1);
   vcl_ScalarT dt = 0.01;
 
   std::vector< std::vector< std::vector<vcl_ScalarT> > >  stl_varmesh(layer_num);
 
-  for (size_t var_index=0; var_index< layer_num; var_index++)
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++)
   {
-    stl_varmesh[var_index].resize(row_num);
-    for (ssize_t i=0; i < row_num; ++i) 
+    stl_varmesh[layer_i].resize(row_num);
+    for (ssize_t row_i=0; row_i < row_num; ++row_i) 
       {
-        for (ssize_t j= 0; j < column_num; ++j) 
+        stl_varmesh[layer_i][row_i].resize(column_num);
+        for (ssize_t column_i= 0; column_i < column_num; ++column_i) 
         {
-          stl_varmesh[var_index][i].resize(column_num);
           // TODO: Hard Code Input, polish the input to make the code can analyze the function automatically.
-          stl_varmesh[0][i][j] = static_cast<vcl_ScalarT> (std::sin(j*dx)/3*2+1/3);
+          stl_varmesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
         }
       }
   }
 
 
-  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh(stl_varmesh);
-  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh_next(stl_varmesh);
+  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh{stl_varmesh};
+  viennapde::Varmesh<vcl_ScalarT> vcl_varmesh_next{stl_varmesh};
 
   std::ofstream file;
-  for (size_t i = 0; i * dt < TotalTime; i++)
+  for (size_t row_i = 0; row_i * dt < TotalTime; row_i++)
   {
-    if (i % 2 ==0) 
+    if (row_i % 2 ==0) 
     {
       viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh, vcl_varmesh_next, dt, dx);
       viennacl::copy(vcl_varmesh_next, stl_varmesh);
@@ -89,24 +89,26 @@ int main(int argc,char **argv)
       viennacl::copy(vcl_varmesh, stl_varmesh);
     }
     
-    file.open(std::to_string(i) + ".csv");
+    file.open(std::to_string(row_i) + ".csv");
     if (file.is_open())
       {
         file << stl_varmesh[0][0][0];
-        for (size_t j = 1; j < stl_varmesh[0][0].size(); j++)
+        for (size_t column_i = 1; column_i < stl_varmesh[0][0].size(); column_i++)
         {
           
-          file << ", "<< stl_varmesh[0][0][j];
+          file << ", "<< stl_varmesh[0][0][column_i];
         }
         file.close();
       }
   }
+  viennapde::scheme::RK3order<vcl_ScalarT>(vcl_varmesh, vcl_varmesh_next, dt, dx, viennapde::scheme::Godunov<vcl_ScalarT>);
   
 
 
 
 
 
+  std::cout << "I am fine 5\n";
   /**
   *  That's it.
   **/

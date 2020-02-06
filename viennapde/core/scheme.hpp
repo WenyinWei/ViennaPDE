@@ -19,6 +19,9 @@
 /** @file viennapde/core/scheme.hpp
     @brief Implementation of concrete scheme for PDE.
 */
+
+#include <functional>
+
 #include "viennacl/linalg/matrix_operations.hpp"
 #include "viennapde/core/mesh.hpp"
 #include "viennapde/core/bmesh.hpp"
@@ -33,15 +36,11 @@ namespace scheme
 template <typename NumericT>
 void Godunov(
     const viennapde::Varmesh<NumericT> & iVarmesh,
-    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx, unsigned int shift=1)
+    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx)
 {
-    std::cout << "I am fine 1\n";
     viennapde::BVarmesh<NumericT> tVarmesh{iVarmesh};
-    std::cout << "I am fine 2\n";
     tVarmesh.extend_boundary(1,0,0);
-    std::cout << "I am fine 3\n";
     tVarmesh.BCPeriodic();
-    std::cout << "I am fine 4\n";
     // ssize_t shift = 1;
     // viennapde::Varmesh<NumericT> tVarmesh(1, iVarmesh.get_row_num(), iVarmesh.get_column_num()+2*shift);
     // viennacl::range submat_row_range_from(0, 1),
@@ -63,13 +62,11 @@ void Godunov(
     // Calculate the u_{j+1/2}^-, u_{j+1/2}^+
     std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, t_std_varmesh_r,
                                                     t_std_ustar_varmesh;
-    std::cout << "I am fine 5\n";
     
     viennacl::copy(tVarmesh, t_std_varmesh_l);
     viennacl::copy(tVarmesh, t_std_varmesh_r);
     viennacl::copy(tVarmesh, t_std_ustar_varmesh);
 
-    std::cout << "I am fine 6\n";
 
     // Calculate the u^*
     for (size_t i = 0; i < tVarmesh.get_layer_num(); i++)
@@ -112,8 +109,8 @@ void Godunov(
     // FIXME I have not yet fixed the following part
     // viennacl::matrix<NumericT> t_vie_fustar = viennacl::linalg::element_prod(t_vie_ustar, t_vie_ustar) / 2.0;
     // viennapde::Varmesh<NumericT> t_vie_fustar = t_vie_ustar * t_vie_ustar / 2.0;
-    viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar, true};
-    t_vie_fustar = t_vie_ustar * t_vie_ustar / 2.0;
+    viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar.get_row_num(),t_vie_ustar.get_column_num(),t_vie_ustar.get_layer_num()};
+    t_vie_fustar = std::move(t_vie_ustar * t_vie_ustar / 2.0);
     // // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)
     viennapde::Varmesh<NumericT> t_vie_fustardiff{t_vie_fustar};
     // viennacl::range submat_row_range_from1(0, 1),
@@ -124,11 +121,13 @@ void Godunov(
     //     submatrix_to_minus(t_vie_fustar, submat_row_range_from1, submat_column_range_from1),
     //     submatrix_tobe_minus(t_vie_fustardiff, submat_row_range_to1, submat_column_range_to1);
     // submatrix_tobe_minus -= submatrix_to_minus;
+    {
     viennacl::matrix<NumericT> tKernel{3, 3};
     tKernel(1, 0) = -1;
-    viennapde::convolve<NumericT, ConvolutionType::EQUIV>(t_vie_fustar, tKernel, t_vie_fustardiff, false);
+    viennapde::convolve<NumericT, ConvolutionType::EQUIV>(t_vie_fustar, tKernel, t_vie_fustardiff, ClrOut::NO);
+    }
     // // Time Forward on tVarmesh, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
-    tVarmesh -= t_vie_fustardiff * dt / dx;
+    tVarmesh -= t_vie_fustardiff * (dt / dx);
     // // Go back to the true output Varmesh, we need to cur down the margin.
     // viennacl::range submat_row_range_from2(0, 1),
     //                 submat_column_range_from2(shift, iVarmesh.get_column_num()+shift-1),
@@ -139,38 +138,33 @@ void Godunov(
     //     submatrix_tobe_back(oVarmesh.data_->at(0), submat_row_range_to2, submat_column_range_to2);
     // oVarmesh.data_->at(0) = submatrix_to_back;
 
+    {
+    viennacl::matrix<NumericT> tKernel{1, 3};
+    viennapde::convolve<NumericT, ConvolutionType::INNER>(tVarmesh, tKernel, oVarmesh, ClrOut::NO);
+    }
 }
-
-enum Scheme {
-    GodunovENUM
-};
 
 
 template <typename NumericT>
 void RK3order(
     const viennapde::Varmesh<NumericT> & iVarmesh,
-    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx, Scheme scheme)
+    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx, 
+    std::function<void (const Varmesh<NumericT> & , Varmesh<NumericT> & , NumericT, NumericT )> scheme)
 {
-    if (scheme==Scheme::GodunovENUM)
+    viennapde::Varmesh<NumericT> tVarmesh1(iVarmesh), tVarmesh2(iVarmesh);
+    scheme(iVarmesh, tVarmesh1, dt, dx);
+    scheme(tVarmesh1, tVarmesh2, dt, dx);
+    for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
     {
-        viennapde::Varmesh<NumericT> tVarmesh1(iVarmesh), tVarmesh2(iVarmesh);
-
-        Godunov(iVarmesh, tVarmesh1, dt, dx);
-        Godunov(tVarmesh1, tVarmesh2, dt, dx);
-        for (size_t i = 0; i < iVarmesh.get_var_num(); i++)
-        {
-            viennacl::matrix<NumericT> t_matrix(tVarmesh2.data_[i]);
-            tVarmesh2.data_[i] = 3 / 4 * iVarmesh.data_[i] + 1 / 4 * t_matrix;
-        }
-        Godunov(tVarmesh2, oVarmesh, dt, dx);
-        for (size_t i = 0; i < iVarmesh.get_var_num(); i++)
-        {
-            viennacl::matrix<NumericT> t_matrix(oVarmesh.data_[i]);
-            oVarmesh.data_[i] = 1 / 3 * iVarmesh.data_[i] + 2 / 3 * t_matrix;
-        }
-        
+        viennacl::matrix<NumericT> t_matrix{*(tVarmesh2[i])};
+        *(tVarmesh2[i]) = *(iVarmesh[i]) * (3 / 4)  + t_matrix *(1 / 4);
     }
-
+    scheme(tVarmesh2, oVarmesh, dt, dx);
+    for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
+    {
+        viennacl::matrix<NumericT> t_matrix{*(oVarmesh[i])};
+        *(oVarmesh[i]) = *(iVarmesh[i]) * (1/3) + t_matrix * (2/3);
+    }
 }
 
 } //namespace viennapde::scheme

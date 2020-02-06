@@ -56,14 +56,14 @@ public:
         {
             viennacl::matrix_range<viennacl::matrix<NumericT>>  
                 submatrix_to(tMatrix[i % tMatrixNum], submat_row_range_to, submat_column_range_to); 
-            submatrix_to = this->data_->at(i);            
-            this->data_->at(i) = tMatrix[i % tMatrixNum];
+            submatrix_to = *(this->at(i));            
+            *(this->at(i)) = tMatrix[i % tMatrixNum];
         }
         
         for (GridIntT i = 0; i < iZ; i++)
         {
-            this->data_->push_front(viennacl::matrix<NumericT>{(size_t)(Nx+2*iX), (size_t)(Ny+2*iY) });
-            this->data_->push_back(viennacl::matrix<NumericT>{(size_t)(Nx+2*iX), (size_t)(Ny+2*iY)});
+            this->push_front(std::make_shared<viennacl::matrix<NumericT>>((size_t)(Nx+2*iX), (size_t)(Ny+2*iY) ));
+            this->push_back(std::make_shared<viennacl::matrix<NumericT>>((size_t)(Nx+2*iX), (size_t)(Ny+2*iY) ));
         }
     };
 public:
@@ -73,8 +73,8 @@ public:
     GridIntT get_layer_boundary() const { return margin_.z; };
 
     // CTOR
-    explicit BVarmesh(const Varmesh<NumericT> & iVarmesh): Varmesh<NumericT>{iVarmesh}, margin_{0,0,0} {};
-
+    explicit BVarmesh(const DequeMat<NumericT> & iDequeMat, bool ref=false): Varmesh<NumericT>{iDequeMat, ref}, margin_{0,0,0} {};
+    virtual ~BVarmesh() {};
     // NOTE BC functions (boundary condition) will be used frequently, so their frequency are pretty important.
     void BCPeriodic() 
     {
@@ -87,7 +87,7 @@ public:
 
         for (GridIntT i = bz; i < this->get_layer_num() - bz; i++)
         {
-            viennacl::matrix<NumericT> & matThisLayer = this->data_->at(i);
+            viennacl::matrix<NumericT> & matThisLayer = *(this->at(i));
             {// Row Range Override
                 viennacl::range submat_row_range_from(Nx-2*bx, Nx-bx),
                                 submat_column_range_from(by, Ny-by),
@@ -131,9 +131,9 @@ public:
         }
 
         for (GridIntT i = 0; i < bz; i++)
-            this->data_->at(i) = this->data_->at(i+Nz-2*bz);
+            *(this->at(i)) = *(this->at(i+Nz-2*bz));
         for (GridIntT i = Nz-bz; i < Nz; i++)
-            this->data_->at(i) = this->data_->at(i-(Nz-2*bz));
+            *(this->at(i)) = *(this->at(i-(Nz-2*bz)));
     };
 
     void BCDirichlet(); //TODO Not yet implemented

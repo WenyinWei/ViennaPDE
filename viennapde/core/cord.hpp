@@ -16,13 +16,9 @@
    License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
-/** @file viennapde/core/convol.hpp
-    @brief Implementation of the variable container for PDE numerical solver by matrix class of ViennaCL library.
-    The 2D-style data handling utilizes the potential of GPU to its extent.
+/** @file viennapde/core/cord.hpp
+    @brief Structures of cordinate to facilitate cord passing.
 */
-
-#include "viennacl/matrix.hpp"
-
 
 
 
@@ -43,7 +39,3 @@ struct cord3
     explicit cord3(IntegerT iX, IntegerT iY, IntegerT iZ): x{iX}, y{iY}, z{iZ} { };
     explicit cord3(IntegerT iX, IntegerT iY): cord3{iX, iY, 0} { };
 };
-
-namespace viennapde{
-    using GridIntT = ssize_t;
-}

@@ -45,13 +45,14 @@ void convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
     viennapde::Varmesh<NumericT> & oVarmesh,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, bool clearResult = true)
+    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
-    oVarmesh.data_->resize(iVarmesh.get_layer_num()); 
-    // STUB 02 Multiply the scalar and contribute to the final Varmesh.
+    // TODO take care memory newing
+    oVarmesh.resize(iVarmesh.get_layer_num()); 
+    // FIXME I am worried here that the shared object is not created properly.
     for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
-        oVarmesh.data_->at(layer_i) 
-        = viennapde::convolve<NumericT, convolT>(iVarmesh.data_->at(layer_i),iKernel, ROIrc_vec, clearResult);
+        *(oVarmesh[layer_i])
+        = viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]),iKernel, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 
@@ -65,10 +66,10 @@ template <  typename NumericT,
 viennapde::Varmesh<NumericT> & convolve(
     viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, bool clearResult = true)
+    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
     viennapde::Varmesh<NumericT> * tVarmesh(iVarmesh.get_layer_num(),iVarmesh.get_row_num(), iVarmesh.get_column_num());
-    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clearResult);
+    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
     return *tVarmesh;
 } //function viennapde::convolve
 
@@ -77,13 +78,13 @@ template <  typename NumericT,
 void convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
-    viennapde::Varmesh<NumericT> & oVarmesh, bool clearResult = true) 
+    viennapde::Varmesh<NumericT> & oVarmesh, ClrOut clrOut = ClrOut::YES) 
 {
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, clearResult);
+    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 template <  typename NumericT, 
@@ -99,7 +100,7 @@ viennapde::Varmesh<NumericT> & convolve(
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, *oVarmesh, ROIrc_vec, true);
+    viennapde::convolve(iVarmesh, iKernel, *oVarmesh, ROIrc_vec, ClrOut::YES);
     return *oVarmesh;
 } //function void viennapde::convolve
 
@@ -113,14 +114,14 @@ void convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const std::deque<viennacl::matrix<NumericT>> & iKernel,
     viennapde::Varmesh<NumericT> & oVarmesh,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, bool clearResult = true)
+    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
     assert( iKernel.size() % 2 == 1 );
     oVarmesh.data_->resize(iVarmesh.get_layer_num()); 
     // STUB 02 Multiply the scalar and contribute to the final Varmesh.
     for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
         oVarmesh.data_->at(layer_i) 
-        = viennapde::convolve<NumericT, convolT>(iVarmesh.data_->at(layer_i),iKernel, ROIrc_vec, clearResult);
+        = viennapde::convolve<NumericT, convolT>(iVarmesh.data_->at(layer_i),iKernel, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 } //namespace viennapde

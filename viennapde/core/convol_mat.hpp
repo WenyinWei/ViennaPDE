@@ -88,7 +88,7 @@ void convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel,
     viennacl::matrix<NumericT> & oMatrix,
-    std::vector<cord2<GridIntT>>& ROIrc_vec, bool clearResult = true) // TODO ROIrc_vec, I am worrying that for the full kernel, this additional option may be speed bottleneck. 
+    std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) // TODO ROIrc_vec, I am worrying that for the full kernel, this additional option may be speed bottleneck. 
 {
     // STUB 01 Check the matrix size 
     assert( (iKernel.size1() % 2 == 1) && (iKernel.size2() % 2 == 1) );
@@ -104,7 +104,7 @@ void convolve(
     
     
     // STUB 02 Multiply the scalar and contribute to the final Varmesh.
-    if (clearResult) {oMatrix.clear();}
+    if (clrOut) {oMatrix.clear();}
 
     for(auto & iter: ROIrc_vec)
     {
@@ -163,11 +163,11 @@ template <  typename NumericT,
 viennacl::matrix<NumericT> & convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>>& ROIrc_vec, bool clearResult = true) //TODO: I guess the TODO marker can be removed. 
+    std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) //TODO: I guess the TODO marker can be removed. 
 {
     const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
     viennacl::matrix<NumericT> *oMatrix = new viennacl::matrix<NumericT> {oMatSize.first, oMatSize.second};
-    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, *oMatrix, ROIrc_vec, clearResult);
+    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, *oMatrix, ROIrc_vec, clrOut);
     return *oMatrix;
 } //function void viennapde::convolve
 
@@ -176,13 +176,13 @@ template <  typename NumericT,
 void convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel,
-    viennacl::matrix<NumericT> & oMatrix, bool clearResult = true) 
+    viennacl::matrix<NumericT> & oMatrix, ClrOut clrOut = ClrOut::YES) 
 {
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iMatrix, iKernel, oMatrix, ROIrc_vec, clearResult);
+    viennapde::convolve(iMatrix, iKernel, oMatrix, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 template <  typename NumericT, 

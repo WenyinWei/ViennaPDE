@@ -40,7 +40,9 @@
 // SECTION 01a Predeclare the Variable Mesh (Varmesh) class
 namespace viennapde
 {
-template <typename NumericT> class Varmesh;
+    template <typename NumericT> class Varmesh;
+    using GridIntT = ssize_t;
+    enum ClrOut : bool { YES=true, NO=false }; 
 } //namespace viennapde
 
 
@@ -59,10 +61,10 @@ template <typename NumericT>
 void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
             viennapde::Varmesh<NumericT> & oVarmesh)
 {   
-    oVarmesh.data_->resize(iVarmeshSTL.size());
+    oVarmesh->resize_ptr(iVarmeshSTL.size());
     for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {   oVarmesh.data_->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
-        viennacl::copy(iVarmeshSTL[layer_i], oVarmesh.data_->at(layer_i));
+    {   oVarmesh->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+        viennacl::copy(*(iVarmeshSTL[layer_i]), *(oVarmesh[layer_i]));
     }
 }
 
@@ -76,13 +78,13 @@ template <typename NumericT>
 void copy(  const viennapde::Varmesh<NumericT> & iVarmesh, 
             std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL)
 {   
-    oVarmeshSTL.resize(iVarmesh.data_->size());
+    oVarmeshSTL.resize(iVarmesh.size());
     for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
     {
         oVarmeshSTL[layer_i].resize(iVarmesh.get_row_num());
         for (size_t row_i = 0; row_i < iVarmesh.get_row_num(); row_i++)
             oVarmeshSTL[layer_i].at(row_i).resize(iVarmesh.get_column_num());
-        viennacl::copy(iVarmesh.data_->at(layer_i), oVarmeshSTL[layer_i]);
+        viennacl::copy(*(iVarmesh[layer_i]), oVarmeshSTL[layer_i]);
     }
 }
 } // namespace viennacl
@@ -93,49 +95,61 @@ void copy(  const viennapde::Varmesh<NumericT> & iVarmesh,
 // SECTION 01 Define the variable mesh (Varmesh) class
 namespace viennapde
 {
+template<typename NumericT> 
+using DequeMat = std::deque<std::shared_ptr<viennacl::matrix<NumericT>>>;
 
 template <typename NumericT>
-class Varmesh : public std::deque<std::shared_ptr<viennacl::matrix<NumericT>>> 
+class Varmesh : public DequeMat<NumericT>
 {
-public: //TODO: Too many dependency on the public, remove them first and then make it private
-    std::unique_ptr<std::deque<viennacl::matrix<NumericT>>> data_;    /** @brief The data_ stored in a ViennaCL matrix organized by a STL vector */
 public:
-    cord3<GridIntT> get_size_num() const { return cord3( data_->at(0).size1(), data_->at(0).size2(), data_->size() ); };
-    GridIntT get_layer_num()  const { return data_->size();};
-    GridIntT get_row_num()    const { return data_->at(0).size1();};
-    GridIntT get_column_num() const { return data_->at(0).size2();};
+    cord3<GridIntT> get_size_num() const { return cord3( (*this)[0]->size1(), (*this)[0]->size2(), this->size() ); };
+    GridIntT get_row_num()    const { return this->at(0)->size1();};
+    GridIntT get_column_num() const { return this->at(0)->size2();};
+    GridIntT get_layer_num()  const { return this->size();};
 public:
-    // SECTION 01_001 Constructor & Destructor
+    /*===== SECTION Constructor & Destructor ==================================================== */
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 
      * @param  {size_t} row_num     : 
      * @param  {size_t} column_num : 
      */
     explicit Varmesh(GridIntT row_num, GridIntT column_num, GridIntT layer_num): 
-        data_{new std::deque<viennacl::matrix<NumericT>> (layer_num)}
-        {   
-            for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
-                this->data_->at(layer_i).resize(row_num, column_num);
+        DequeMat<NumericT> {(size_t)layer_num}
+        {
+            for (GridIntT layer_i = 0; layer_i < layer_num; layer_i++)
+                this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>(row_num, column_num);
+            std::cout << "Matrix size: "<< row_num<<", "<<column_num<<"\n";
         };
     /** @brief Constructor <- VarmeshSTL
      * @param  {std::vector<std::vector<std::vector<NumericT>>>} iVarmeshSTL : 
      */
     explicit Varmesh(const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL): 
-        Varmesh(iVarmeshSTL.size(), iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size())
+        Varmesh(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size(), iVarmeshSTL.size())
         {   
-            for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-                viennacl::copy(iVarmeshSTL[layer_i], this->data_->at(layer_i));
+            for (GridIntT layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
+                viennacl::copy(iVarmeshSTL[layer_i], *(this->at(layer_i)));
         };
     /** @brief Copy Constructor 
-     * @param  {Varmesh<NumericT>} iVarmesh : 
+     * @param  {Varmesh<NumericT>} iDequeMat : 
      */
-    explicit Varmesh(const Varmesh<NumericT> & iVarmesh, bool blankMesh=false): 
-        Varmesh(iVarmesh.get_layer_num(), iVarmesh.get_row_num(), iVarmesh.get_column_num())
+    explicit Varmesh(const DequeMat<NumericT> & iDequeMat, bool ref=false): 
+        Varmesh(iDequeMat[0]->size1(), iDequeMat[0]->size2(), iDequeMat.size())
         {   
-            if (!blankMesh)
-            for (size_t layer_i = 0; layer_i < iVarmesh.get_layer_num(); layer_i++)
-                this->data_->at(layer_i) = iVarmesh.data_->at(layer_i);
+            for (GridIntT layer_i = 0; layer_i < iDequeMat.size(); layer_i++)
+            {
+                if (!ref) {
+                    *(this->at(layer_i)) = *(iDequeMat[layer_i]);
+                } else {
+                    this->at(layer_i) = iDequeMat[layer_i];
+                }
+            }
         };
+    explicit Varmesh(const Varmesh<NumericT> & iVarmesh, bool ref=false):Varmesh((DequeMat<NumericT>)iVarmesh) {};
+
+    virtual ~Varmesh() {}
+    
+    /*===== SECTION Assignment Overriding =========================================================== */
+
     /** @brief Copy Assignment */
     Varmesh<NumericT>& operator= (Varmesh<NumericT> & iVarmesh)
     {
@@ -143,94 +157,100 @@ public:
         << "Please check your code and debug";
         return *this;
     };
-    /** Move Assignment */
-    Varmesh<NumericT>& operator= (Varmesh<NumericT> && iVarmesh) { this->data_ = std::move(iVarmesh.data_); return *this; };
-    // varmesh(varmesh<NumericT> && iVarmesh);
-    /** @brief ~varmesh Destructor */
-    // ~varmesh();
+    /** @brief Move Assignment */
+    Varmesh<NumericT>& operator= (Varmesh<NumericT> && iVarmesh) 
+    {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+        {
+            this->at(i) = iVarmesh[i];
+            iVarmesh[i].reset();
+        }
+        return *this; 
+    };
 
+    /*===== SECTION Operator Overloading=========================================================== */
     Varmesh<NumericT>& operator+ (const Varmesh<NumericT> & iVarmesh) const
     {
         Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {*this};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) += iVarmesh.data_->at(i);
+            *(tVarmesh->at(i)) += *(iVarmesh[i]);
         return *tVarmesh;
     }
     Varmesh<NumericT>& operator- (const Varmesh<NumericT> & iVarmesh) const 
     {
         Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {*this};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) -= iVarmesh.data_->at(i);
+            *(tVarmesh->at(i)) -= *(iVarmesh[i]);
         return *tVarmesh;
     }
     Varmesh<NumericT>& operator* (const Varmesh<NumericT> & iVarmesh) const 
     {
-        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {this->get_row_num(),this->get_column_num(),this->get_layer_num()};
+        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT>{this->get_row_num(),this->get_column_num(),this->get_layer_num()};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) = viennacl::linalg::element_prod(this->data_->at(i), iVarmesh.data_->at(i));
+            *(tVarmesh->at(i)) = viennacl::linalg::element_prod(*(this->at(i)), *(iVarmesh[i]));
         return *tVarmesh;
     }
     Varmesh<NumericT>& operator/ (const Varmesh<NumericT> & iVarmesh) const
     {
-        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {this->get_row_num(),this->get_column_num(),this->get_layer_num()};
+        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT>{this->get_row_num(),this->get_column_num(),this->get_layer_num()};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) = viennacl::linalg::element_div(this->data_->at(i), iVarmesh.data_->at(i));
+            *(tVarmesh->at(i)) = viennacl::linalg::element_div(*(this->at(i)), *(iVarmesh[i]));
         return *tVarmesh;
     }
     Varmesh<NumericT>& operator+= (const Varmesh<NumericT> & iVarmesh) 
     {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            this->data_->at(i) += iVarmesh.data_->at(i);
+            *(this->at(i)) += *(iVarmesh[i]);
         return *this;
     }
     Varmesh<NumericT>& operator-= (const Varmesh<NumericT> & iVarmesh) 
     {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            this->data_->at(i) -= iVarmesh.data_->at(i);
+            *(this->at(i))  -= *(iVarmesh[i]);
         return *this;
     }
     Varmesh<NumericT>& operator*= (const Varmesh<NumericT> & iVarmesh) 
     {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            this->data_->at(i) = viennacl::linalg::element_prod( this->data_->at(i), iVarmesh.data_->at(i));
+            *(this->at(i)) = viennacl::linalg::element_prod( *(this->at(i)), *(iVarmesh[i]));
         return *this;
     }
     Varmesh<NumericT>& operator/= (const Varmesh<NumericT> & iVarmesh) 
     {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            this->data_->at(i) = viennacl::linalg::element_div( this->data_->at(i), iVarmesh.data_->at(i));
+            *(this->at(i)) = viennacl::linalg::element_div( *(this->at(i)), *(iVarmesh[i]));
         return *this;
     }
-    Varmesh<NumericT>& operator+ (NumericT iNum) 
+    Varmesh<NumericT>& operator+ (NumericT iNum) const
     {
-        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {*this};
+        Varmesh<NumericT> *tVarmesh{*this};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) += iNum;
+            *(tVarmesh->at(i)) += iNum;
         return *tVarmesh;
     }
-    Varmesh<NumericT>& operator- (NumericT iNum) 
+    Varmesh<NumericT>& operator- (NumericT iNum) const
     {
-        Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {*this};
+        Varmesh<NumericT> *tVarmesh{*this};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) -= iNum;
+            *(tVarmesh->at(i)) -= iNum;
         return *tVarmesh;
     }
-    Varmesh<NumericT>& operator* (NumericT iNum) 
+    Varmesh<NumericT>& operator* (NumericT iNum) const
     {
         Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {this->get_row_num(),this->get_column_num(),this->get_layer_num()};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) *= iNum;
+            *(tVarmesh->at(i)) *= iNum;
         return *tVarmesh;
     }
-    Varmesh<NumericT>& operator/ (NumericT iNum) 
+    Varmesh<NumericT>& operator/ (NumericT iNum) const
     {
         Varmesh<NumericT> *tVarmesh = new Varmesh<NumericT> {this->get_row_num(),this->get_column_num(),this->get_layer_num()};
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-            tVarmesh->data_->at(i) /= iNum;
+            *(tVarmesh->at(i)) /= iNum;
         return *tVarmesh;
     }
 
-    // SECTION 02_001 COPY interface from other classes
+    /*===== SECTION COPY interface from other classes ======================================== */
     friend void viennacl::copy<NumericT>(
         const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
         viennapde::Varmesh<NumericT> & oVarmesh);
@@ -238,6 +258,27 @@ public:
         const viennapde::Varmesh<NumericT> & iVarmesh, 
         std::vector<std::vector<std::vector<NumericT>>> & oVarmeshSTL);
     
+    
+    /*===== SECTION Novel Methods =========================================================== */
+
+    /** @brief Resize the container class mesh.
+     * @param  {GridIntT} Nx : 
+     * @param  {GridIntT} Ny : 
+     * @param  {GridIntT} Nz : 
+     */
+    void resize_ptr(GridIntT Nz)
+    {
+        GridIntT old_Nz = this->get_layer_num();
+        if (Nz > old_Nz)
+        {
+            this->resize(Nz);
+            for (GridIntT i = old_Nz; i < Nz; i++)
+                this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(this->get_row_num(), this->get_column_num());
+        } else if (Nz = old_Nz) {
+        } else if (Nz < old_Nz) {
+            this->resize(Nz);
+        }
+    }
     
 };
 
