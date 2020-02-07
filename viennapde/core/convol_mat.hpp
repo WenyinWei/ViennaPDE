@@ -56,6 +56,7 @@ std::pair<GridIntT, GridIntT> ConvolOMatSize(
     {
         oMatSize1 = MatSize1 - 2 * iKernelHalf1;
         oMatSize2 = MatSize2 - 2 * iKernelHalf2;
+        assert(oMatSize1>=1 & oMatSize2>=1);
     }
     else if constexpr (convolT==ConvolutionType::OUTER)
     {

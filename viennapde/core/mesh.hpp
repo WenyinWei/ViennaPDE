@@ -211,10 +211,8 @@ public:
             this->resize(Nz);
             for (GridIntT i = old_Nz; i < Nz; i++)
                 this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(this->get_row_num(), this->get_column_num());
-        } else if (Nz = old_Nz) {
-        } else if (Nz < old_Nz) {
+        } else if (Nz <= old_Nz) {
             this->resize(Nz); 
-            this->shrink_to_fit();
         }
     }
     
