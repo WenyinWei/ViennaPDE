@@ -66,21 +66,20 @@ public:
             this->push_back(std::make_shared<viennacl::matrix<NumericT>>((size_t)(Nx+2*iX), (size_t)(Ny+2*iY) ));
         }
     };
-public:
     cord3<GridIntT> get_size_boundary() const { return margin_; };
     GridIntT get_row_boundary() const { return margin_.x; };
     GridIntT get_column_boundary() const { return margin_.y; };
     GridIntT get_layer_boundary() const { return margin_.z; };
 
     // CTOR
-    explicit BVarmesh(const DequeMat<NumericT> & iDequeMat, bool ref=false): Varmesh<NumericT>{iDequeMat, ref}, margin_{0,0,0} {};
+    explicit BVarmesh(const DequeMat<NumericT> & iDequeMat): Varmesh<NumericT>{iDequeMat}, margin_{0,0,0} {};
     virtual ~BVarmesh() {};
     // NOTE BC functions (boundary condition) will be used frequently, so their frequency are pretty important.
     void BCPeriodic() 
     {
-        const GridIntT  bx =  this->get_size_boundary().x,
-                        by =  this->get_size_boundary().y,
-                        bz =  this->get_size_boundary().z;
+        const GridIntT  bx = this->get_size_boundary().x,
+                        by = this->get_size_boundary().y,
+                        bz = this->get_size_boundary().z;
         const GridIntT  Nx = this->get_row_num(),
                         Ny = this->get_column_num(),
                         Nz = this->get_layer_num();

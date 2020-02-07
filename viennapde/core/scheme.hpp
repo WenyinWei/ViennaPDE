@@ -38,109 +38,93 @@ void Godunov(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx)
 {
-    viennapde::BVarmesh<NumericT> tVarmesh{iVarmesh};
-    tVarmesh.extend_boundary(1,0,0);
+    viennapde::BVarmesh<NumericT> tVarmesh{(DequeMat<NumericT>)iVarmesh};
+    tVarmesh.extend_boundary(0,1,0);
     tVarmesh.BCPeriodic();
-    // ssize_t shift = 1;
-    // viennapde::Varmesh<NumericT> tVarmesh(1, iVarmesh.get_row_num(), iVarmesh.get_column_num()+2*shift);
-    // viennacl::range submat_row_range_from(0, 1),
-    //                 submat_column_range_from(0, iVarmesh.get_column_num()),
-    //                 submat_row_range_to(0, 1),
-    //                 submat_column_range_to(shift, iVarmesh.get_column_num()+shift);
-    // viennacl::matrix_range<viennacl::matrix<NumericT>>  
-    //     submatrix_to_replace(iVarmesh.data_->at(0), submat_row_range_from, submat_column_range_from),
-    //     submatrix_tobe_replace(tVarmesh.data_->at(0), submat_row_range_to, submat_column_range_to); 
-    // submatrix_tobe_replace = submatrix_to_replace;
-    // for (ssize_t i = 0; i < shift; i++)
-    // {
-    //     tVarmesh.data_->at(0)(0, i) = iVarmesh.data_->at(0)(0, iVarmesh.get_column_num()+i);
-    //     tVarmesh.data_->at(0)(0, iVarmesh.get_column_num()+2*shift-1-i) = iVarmesh.data_->at(0)(0, 2*shift-1-i);
-    // }
-    
-
 
     // Calculate the u_{j+1/2}^-, u_{j+1/2}^+
-    std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, t_std_varmesh_r,
+    std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, 
+                                                    t_std_varmesh_r,
                                                     t_std_ustar_varmesh;
-    
     viennacl::copy(tVarmesh, t_std_varmesh_l);
     viennacl::copy(tVarmesh, t_std_varmesh_r);
     viennacl::copy(tVarmesh, t_std_ustar_varmesh);
-
 
     // Calculate the u^*
     for (size_t i = 0; i < tVarmesh.get_layer_num(); i++)
     for (size_t j = 0; j < tVarmesh.get_row_num(); j++)
     {
-            for (ssize_t k = 0; k < tVarmesh.get_column_num()-1; k++)
-    {
-        if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]>=0)) 
+        for (size_t k = 0; k < tVarmesh.get_column_num()-1; k++)
         {
-            t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
-        }
-        else if ((t_std_varmesh_l[i][j][k]<=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-        {
-            t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
-        }
-        else if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-        {
-            if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] > 0)
+            if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]>=0)) 
             {
                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
             }
-            else if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] < 0)
+            else if ((t_std_varmesh_l[i][j][k]<=0) && (t_std_varmesh_r[i][j][k+1]<=0))
             {
                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
             }
+            else if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]<=0))
+            {
+                if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] > 0)
+                {
+                    t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
+                }
+                else if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] < 0)
+                {
+                    t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
+                }
+            }
+            else if ((t_std_varmesh_l[i][j][k]<0) && (t_std_varmesh_r[i][j][k+1]>0))
+            {
+                t_std_ustar_varmesh[i][j][k]=0;
+            };
         }
-        else if ((t_std_varmesh_l[i][j][k]<0) && (t_std_varmesh_r[i][j][k+1]>0))
-        {
-            t_std_ustar_varmesh[i][j][k]=0;
-        };
-    }
-        t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0].size() -1]=0;
+        t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0][0].size() -1]=0;
     }
 
+
+    std::cout << "I am fine Godunov 5\n";
 
     // Calculate f(u^*)
-    // viennacl::matrix<NumericT> t_vie_ustar;
-    // viennacl::copy(t_std_ustar_varmesh, t_vie_ustar);
     viennapde::Varmesh<NumericT> t_vie_ustar{t_std_ustar_varmesh};
-    // FIXME I have not yet fixed the following part
-    // viennacl::matrix<NumericT> t_vie_fustar = viennacl::linalg::element_prod(t_vie_ustar, t_vie_ustar) / 2.0;
-    // viennapde::Varmesh<NumericT> t_vie_fustar = t_vie_ustar * t_vie_ustar / 2.0;
-    viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar.get_row_num(),t_vie_ustar.get_column_num(),t_vie_ustar.get_layer_num()};
-    t_vie_fustar = std::move(t_vie_ustar * t_vie_ustar / 2.0);
-    // // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)
-    viennapde::Varmesh<NumericT> t_vie_fustardiff{t_vie_fustar};
-    // viennacl::range submat_row_range_from1(0, 1),
-    //                 submat_column_range_from1(0, t_vie_fustar.size2()-1),
-    //                 submat_row_range_to1(0, 1),
-    //                 submat_column_range_to1(1, t_vie_fustardiff.size2());
-    // viennacl::matrix_range<viennacl::matrix<NumericT>>  
-    //     submatrix_to_minus(t_vie_fustar, submat_row_range_from1, submat_column_range_from1),
-    //     submatrix_tobe_minus(t_vie_fustardiff, submat_row_range_to1, submat_column_range_to1);
-    // submatrix_tobe_minus -= submatrix_to_minus;
-    {
-    viennacl::matrix<NumericT> tKernel{3, 3};
-    tKernel(1, 0) = -1;
-    viennapde::convolve<NumericT, ConvolutionType::EQUIV>(t_vie_fustar, tKernel, t_vie_fustardiff, ClrOut::NO);
-    }
-    // // Time Forward on tVarmesh, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
-    tVarmesh -= t_vie_fustardiff * (dt / dx);
-    // // Go back to the true output Varmesh, we need to cur down the margin.
-    // viennacl::range submat_row_range_from2(0, 1),
-    //                 submat_column_range_from2(shift, iVarmesh.get_column_num()+shift-1),
-    //                 submat_row_range_to2(0, 1),
-    //                 submat_column_range_to2(0, iVarmesh.get_column_num());
-    // viennacl::matrix_range<viennacl::matrix<NumericT>>  
-    //     submatrix_to_back(tVarmesh.data_->at(0), submat_row_range_from2, submat_column_range_from2),
-    //     submatrix_tobe_back(oVarmesh.data_->at(0), submat_row_range_to2, submat_column_range_to2);
-    // oVarmesh.data_->at(0) = submatrix_to_back;
+    viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar.get_size_num()};
+    t_vie_fustar = t_vie_ustar * t_vie_ustar / 2 ;
 
+    // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)
+    viennapde::Varmesh<NumericT> t_vie_fustardiff{t_vie_fustar};
+
+    std::cout << "I am fine Godunov 6\n";
     {
     viennacl::matrix<NumericT> tKernel{1, 3};
-    viennapde::convolve<NumericT, ConvolutionType::INNER>(tVarmesh, tKernel, oVarmesh, ClrOut::NO);
+    tKernel(0, 0) = -1;
+    viennapde::convolve<NumericT, ConvolutionType::EQUIV>(t_vie_fustar, tKernel, t_vie_fustardiff, ClrOut::NO);
+    }
+
+
+    // Time Forward on tVarmesh, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
+    tVarmesh -= t_vie_fustardiff * (dt / dx);
+
+    static int times = 0;
+    std::vector< std::vector< std::vector<NumericT> > >  stl_varmesh;
+    viennacl::copy(tVarmesh, stl_varmesh);
+    std::ofstream file;
+    file.open(std::to_string(times++) + "_tVarmesh.csv");
+    if (file.is_open())
+    {
+      file << stl_varmesh[0][0][0];        
+      for (size_t column_i = 1; column_i < stl_varmesh[0][0].size(); column_i++)
+      {
+        file << ", "<< stl_varmesh[0][0][column_i];
+      }
+      file.close();
+    }
+
+    // STUB Cut down the margin.
+
+    {
+    viennacl::matrix<NumericT> tKernel{1, 3}; tKernel(0, 1) = 1;
+    viennapde::convolve<NumericT, ConvolutionType::INNER>(tVarmesh, tKernel, oVarmesh, ClrOut::YES);
     }
 }
 
@@ -151,20 +135,14 @@ void RK3order(
     viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx, 
     std::function<void (const Varmesh<NumericT> & , Varmesh<NumericT> & , NumericT, NumericT )> scheme)
 {
-    viennapde::Varmesh<NumericT> tVarmesh1(iVarmesh), tVarmesh2(iVarmesh);
-    scheme(iVarmesh, tVarmesh1, dt, dx);
-    scheme(tVarmesh1, tVarmesh2, dt, dx);
-    for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
-    {
-        viennacl::matrix<NumericT> t_matrix{*(tVarmesh2[i])};
-        *(tVarmesh2[i]) = *(iVarmesh[i]) * (3 / 4)  + t_matrix *(1 / 4);
-    }
-    scheme(tVarmesh2, oVarmesh, dt, dx);
-    for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
-    {
-        viennacl::matrix<NumericT> t_matrix{*(oVarmesh[i])};
-        *(oVarmesh[i]) = *(iVarmesh[i]) * (1/3) + t_matrix * (2/3);
-    }
+    std::vector<viennapde::Varmesh<NumericT>> tVarmesh;
+    for (size_t i = 0; i < 2; i++)
+        tVarmesh.push_back(viennapde::Varmesh<NumericT>{iVarmesh.get_size_num()});
+    scheme(iVarmesh, tVarmesh[0], dt, dx);
+    scheme(tVarmesh[0], tVarmesh[1], dt, dx);
+    tVarmesh[1] = iVarmesh * (3/4) + tVarmesh[1] * (1/4);
+    scheme(tVarmesh[1], oVarmesh, dt, dx);
+    oVarmesh = iVarmesh * (1/3) + oVarmesh * (2/3);
 }
 
 } //namespace viennapde::scheme

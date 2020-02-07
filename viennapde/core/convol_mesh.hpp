@@ -48,11 +48,11 @@ void convolve(
     std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
     // TODO take care memory newing
-    oVarmesh.resize(iVarmesh.get_layer_num()); 
+    oVarmesh.resize_ptr(iVarmesh.get_layer_num()); 
     // FIXME I am worried here that the shared object is not created properly.
     for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
         *(oVarmesh[layer_i])
-        = viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]),iKernel, ROIrc_vec, clrOut);
+        = std::move( viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]),iKernel, ROIrc_vec, clrOut));
 } //function void viennapde::convolve
 
 
