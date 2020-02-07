@@ -118,8 +118,8 @@ public:
      * @param  {size_t} row_num     : 
      * @param  {size_t} column_num : 
      */
-    explicit Varmesh(GridIntT row_num, GridIntT column_num, GridIntT layer_num): 
-        DequeMat<NumericT> {(size_t)layer_num}
+    explicit Varmesh(size_t row_num, size_t column_num, size_t layer_num): 
+        DequeMat<NumericT> {layer_num}
         {
             for (GridIntT layer_i = 0; layer_i < layer_num; layer_i++)
                 this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>(row_num, column_num);
@@ -136,13 +136,25 @@ public:
     /** @brief Copy Constructor 
      * @param  {Varmesh<NumericT>} iDequeMat : 
      */
-    Varmesh(const DequeMat<NumericT> & iDequeMat): 
-        Varmesh(iDequeMat[0]->size1(), iDequeMat[0]->size2(), iDequeMat.size())
+    Varmesh(const DequeMat<NumericT> & iDequeMat):
+        DequeMat<NumericT> {iDequeMat.size()}
         {   
             for (GridIntT layer_i = 0; layer_i < iDequeMat.size(); layer_i++)
+            {
+                this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>();
                 *(this->at(layer_i)) = *(iDequeMat[layer_i]);
+            }
         };
     Varmesh(const Varmesh<NumericT> & iVarmesh): Varmesh((DequeMat<NumericT>)iVarmesh) {};
+    /** @brief  Move Constructor */
+    Varmesh(Varmesh<NumericT> && iVarmesh):
+        DequeMat<NumericT> {iVarmesh.size()}
+        {   
+            for (GridIntT layer_i = 0; layer_i < iVarmesh.size(); layer_i++)
+                this->at(layer_i) = iVarmesh[layer_i];
+            iVarmesh.resize(0);
+            iVarmesh.shrink_to_fit();
+        };
     virtual ~Varmesh() {}
     
     /*===== SECTION Assignment Overriding =========================================================== */
@@ -152,16 +164,13 @@ public:
     /** @brief Move Assignment */
     Varmesh<NumericT>& operator= (Varmesh<NumericT> && iVarmesh) 
     {
-        this->resize_ptr(this->get_layer_num());
+        this->resize(this->get_layer_num());
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
-        {
             this->at(i) = iVarmesh[i];
-            iVarmesh[i].reset();
-        }
+        iVarmesh.resize(0);
+        iVarmesh.shrink_to_fit();
         return *this; 
     };
-
-    /*===== SECTION Operator Overloading=========================================================== */
     Varmesh<NumericT>& operator+= (const Varmesh<NumericT> & iVarmesh) 
     {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)

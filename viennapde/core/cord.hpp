@@ -39,3 +39,6 @@ struct cord3
     explicit cord3(IntegerT iX, IntegerT iY, IntegerT iZ): x{iX}, y{iY}, z{iZ} { };
     explicit cord3(IntegerT iX, IntegerT iY): cord3{iX, iY, 0} { };
 };
+
+template <typename IntegerT>
+inline bool operator== (const cord3<IntegerT> & lhs, const cord3<IntegerT> & rhs) { return (lhs.x==rhs.x && lhs.y==rhs.y && lhs.z==rhs.z);}
