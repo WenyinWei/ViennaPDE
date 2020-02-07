@@ -151,7 +151,10 @@ public:
         DequeMat<NumericT> {iVarmesh.size()}
         {   
             for (GridIntT layer_i = 0; layer_i < iVarmesh.size(); layer_i++)
+            {
                 this->at(layer_i) = iVarmesh[layer_i];
+                iVarmesh[layer_i].reset();
+            }
             iVarmesh.resize(0);
             iVarmesh.shrink_to_fit();
         };
