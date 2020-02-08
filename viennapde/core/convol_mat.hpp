@@ -38,11 +38,11 @@ enum ConvolutionType
 
 
 template < typename NumericT, viennapde::ConvolutionType convolT >
-std::pair<GridIntT, GridIntT> ConvolOMatSize(
+cord2<size_t> ConvolOMatSize(
     const GridIntT MatSize1, const GridIntT MatSize2,
     const GridIntT KerSize1, const GridIntT KerSize2)
 {
-    assert(MatSize1>=1 && MatSize2>=1 && KerSize1>=1 && KerSize2>=1);
+    assert( MatSize1>=1 && MatSize2>=1 && KerSize1>=1 && KerSize2>=1 );
     assert( KerSize1 % 2 == 1 && KerSize2 % 2 == 1 );
     const GridIntT iKernelHalf1 = (KerSize1-1)/2;
     const GridIntT iKernelHalf2 = (KerSize2-1)/2;
@@ -63,12 +63,12 @@ std::pair<GridIntT, GridIntT> ConvolOMatSize(
         oMatSize1 = MatSize1 + 2 * iKernelHalf1;
         oMatSize2 = MatSize2 + 2 * iKernelHalf2;
     }
-    return std::pair<size_t, size_t>(oMatSize1, oMatSize2);
+    return cord2<size_t>(oMatSize1, oMatSize2);
     
 }
 
 template < typename NumericT, viennapde::ConvolutionType convolT >
-std::pair<GridIntT, GridIntT> ConvolOMatSize(
+cord2<size_t> ConvolOMatSize(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel)
 {
@@ -161,15 +161,15 @@ void convolve(
 
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
-viennacl::matrix<NumericT> & convolve(
+viennacl::matrix<NumericT> convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel,
     std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) //TODO: I guess the TODO marker can be removed. 
 {
-    const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
-    viennacl::matrix<NumericT> *oMatrix = new viennacl::matrix<NumericT> {oMatSize.first, oMatSize.second};
-    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, *oMatrix, ROIrc_vec, clrOut);
-    return *oMatrix;
+    const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
+    viennacl::matrix<NumericT> oMatrix{oMatSize.x, oMatSize.y};
+    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, oMatrix, ROIrc_vec, clrOut);
+    return oMatrix;
 } //function void viennapde::convolve
 
 template <  typename NumericT, 
@@ -188,18 +188,18 @@ void convolve(
 
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
-viennacl::matrix<NumericT> & convolve(
+viennacl::matrix<NumericT> convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel) 
 {
     const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
-    viennacl::matrix<NumericT> *oMatrix = new viennacl::matrix<NumericT> {oMatSize.first, oMatSize.second};
+    viennacl::matrix<NumericT> oMatrix{oMatSize.first, oMatSize.second};
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iMatrix, iKernel, *oMatrix, ROIrc_vec);
-    return *oMatrix;
+    viennapde::convolve(iMatrix, iKernel, oMatrix, ROIrc_vec);
+    return oMatrix;
 } //function void viennapde::convolve
 
 

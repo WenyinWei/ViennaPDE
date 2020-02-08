@@ -110,8 +110,9 @@ public:
 public:
     /*===== SECTION Constructor & Destructor ==================================================== */
 
-    explicit Varmesh(const typename DequeMat<NumericT>::iterator & first, 
-    const typename DequeMat<NumericT>::iterator & last) : DequeMat<NumericT>{first, last} {}; // @brief Range CTOR inherited from std::deque
+    explicit Varmesh(
+        const typename DequeMat<NumericT>::iterator & first, 
+        const typename DequeMat<NumericT>::iterator & last) : DequeMat<NumericT>{first, last} {}; // @brief Range CTOR inherited from std::deque
     explicit Varmesh(cord3<GridIntT> size_cord3): Varmesh(size_cord3.x, size_cord3.y, size_cord3.z) {};
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 
@@ -215,14 +216,29 @@ public:
      * @param  {GridIntT} Ny : 
      * @param  {GridIntT} Nz : 
      */
-    void resize_ptr(GridIntT Nz)
+    void resize_ptr(GridIntT Nz, GridIntT Nx=0, GridIntT Ny=0)
     {
+        assert(Nx>=0 && Ny>=0 && Nz>=0);
         GridIntT old_Nz = this->get_layer_num();
         if (Nz > old_Nz)
         {
             this->resize(Nz);
-            for (GridIntT i = old_Nz; i < Nz; i++)
-                this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(this->get_row_num(), this->get_column_num());
+            if ((!(this->empty()) && Nx==0 && Ny==0) || (!(this->empty()) && Nx==this->get_row_num() && Ny==this->get_column_num()))
+            {
+                for (GridIntT i = old_Nz; i < Nz; i++)
+                    this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(this->get_row_num(), this->get_column_num());
+            } else if (!(this->empty()) && Nx!=0 && Ny!=0 && Nx!=this->get_row_num() && Ny!=this->get_column_num())
+            {
+                std::cerr << "Mesh::Resize_ptr function, original size is different from your input matrix size.\n";
+            } else if (this->empty() && Nx!=0 && Ny!=0)
+            {
+                for (GridIntT i = old_Nz; i < Nz; i++)
+                    this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(Nx, Ny);
+            } else if (this->empty() && Nx==0 && Ny==0)
+            {
+                throw("Mesh::Resize_ptr function, please tell how big a matrix you want.");
+                std::cerr << "Mesh::Resize_ptr function, please tell how big a matrix you want.\n";
+            } else {std::cerr << "Mesh::Resize_ptr function, your input is not legal.\n";}
         } else if (Nz <= old_Nz) {
             this->resize(Nz); 
         }

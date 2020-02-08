@@ -47,17 +47,18 @@ void convolve(
     viennapde::Varmesh<NumericT> & oVarmesh,
     std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
-    // TODO take care memory newing
-    if (oVarmesh.get_size_num() == iVarmesh.get_size_num())
+    const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(*iVarmesh[0], iKernel);
+    oVarmesh.resize_ptr(iVarmesh.get_layer_num(), oMatSize.x, oMatSize.y); // I suggest to use a completely new mesh object.
+    if (clrOut == ClrOut::YES)
     {
-        /* code */
+        for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
+            *(oVarmesh[layer_i]) = viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]), iKernel, ROIrc_vec, clrOut);
+    } else
+    {
+        for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
+            *(oVarmesh[layer_i]) += viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]), iKernel, ROIrc_vec, clrOut);
     }
     
-    oVarmesh.resize_ptr(iVarmesh.get_layer_num()); 
-    // FIXME I am worried here that the shared object is not created properly.
-    for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
-        *(oVarmesh[layer_i])
-        = viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]),iKernel, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 
@@ -68,14 +69,14 @@ void convolve(
  */
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> & convolve(
+viennapde::Varmesh<NumericT> convolve(
     viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
     std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
 {
-    viennapde::Varmesh<NumericT> * tVarmesh(iVarmesh.get_layer_num(),iVarmesh.get_row_num(), iVarmesh.get_column_num());
+    viennapde::Varmesh<NumericT> tVarmesh(iVarmesh.get_layer_num(),iVarmesh.get_row_num(), iVarmesh.get_column_num());
     viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
-    return *tVarmesh;
+    return tVarmesh;
 } //function viennapde::convolve
 
 template <  typename NumericT, 
@@ -94,19 +95,19 @@ void convolve(
 
 template <  typename NumericT, 
             viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> & convolve(
+viennapde::Varmesh<NumericT> convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel) 
 {
     const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(
         iVarmesh.get_row_num(), iVarmesh.get_column_num(), iKernel.size1(), iKernel.size2());    
-    viennacl::matrix<NumericT> *oVarmesh = new viennapde::Varmesh<NumericT> {iVarmesh.get_layer_num(), oMatSize.first, oMatSize.second};
+    viennacl::matrix<NumericT> oVarmesh{iVarmesh.get_layer_num(), oMatSize.first, oMatSize.second};
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
     viennapde::convolve(iVarmesh, iKernel, *oVarmesh, ROIrc_vec, ClrOut::YES);
-    return *oVarmesh;
+    return oVarmesh;
 } //function void viennapde::convolve
 
 
