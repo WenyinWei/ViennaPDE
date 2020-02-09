@@ -41,4 +41,6 @@ struct cord3
 };
 
 template <typename IntegerT>
+inline bool operator== (const cord2<IntegerT> & lhs, const cord2<IntegerT> & rhs) { return (lhs.x==rhs.x && lhs.y==rhs.y);}
+template <typename IntegerT>
 inline bool operator== (const cord3<IntegerT> & lhs, const cord3<IntegerT> & rhs) { return (lhs.x==rhs.x && lhs.y==rhs.y && lhs.z==rhs.z);}
