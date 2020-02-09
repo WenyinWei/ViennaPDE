@@ -51,6 +51,7 @@ void Godunov(
     viennacl::copy(tVarmesh, t_std_ustar_varmesh);
 
     // Calculate the u^*
+    //TODO I have no idea how to operate this part on GPU.
     for (size_t i = 0; i < tVarmesh.get_layer_num(); i++)
     for (size_t j = 0; j < tVarmesh.get_row_num(); j++)
     {
@@ -83,9 +84,6 @@ void Godunov(
         t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0][0].size() -1]=0;
     }
 
-
-    std::cout << "I am fine Godunov 5\n";
-
     // Calculate f(u^*)
     viennapde::Varmesh<NumericT> t_vie_ustar{t_std_ustar_varmesh};
     viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar.get_size_num()};
@@ -94,7 +92,6 @@ void Godunov(
     // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)
     viennapde::Varmesh<NumericT> t_vie_fustardiff{t_vie_fustar};
 
-    std::cout << "I am fine Godunov 6\n";
     {
     viennacl::matrix<NumericT> tKernel{1, 3};
     tKernel(0, 0) = -1;
@@ -104,25 +101,24 @@ void Godunov(
 
     // Time Forward on tVarmesh, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
     tVarmesh -= t_vie_fustardiff * (dt / dx);
+    // // Test Output Part Make it a function after a while
+    // static int times = 0;
+    // std::vector< std::vector< std::vector<NumericT> > >  stl_varmesh;
+    // viennacl::copy(tVarmesh, stl_varmesh);
+    // std::ofstream file;
+    // file.open(std::to_string(times++) + "_tVarmesh.csv");
+    // if (file.is_open())
+    // {
+    //   file << stl_varmesh[0][0][0];        
+    //   for (size_t column_i = 1; column_i < stl_varmesh[0][0].size(); column_i++)
+    //   {
+    //     file << ", "<< stl_varmesh[0][0][column_i];
+    //   }
+    //   file.close();
+    // }
 
-    static int times = 0;
-    std::vector< std::vector< std::vector<NumericT> > >  stl_varmesh;
-    viennacl::copy(tVarmesh, stl_varmesh);
-    std::ofstream file;
-    file.open(std::to_string(times++) + "_tVarmesh.csv");
-    if (file.is_open())
-    {
-      file << stl_varmesh[0][0][0];        
-      for (size_t column_i = 1; column_i < stl_varmesh[0][0].size(); column_i++)
-      {
-        file << ", "<< stl_varmesh[0][0][column_i];
-      }
-      file.close();
-    }
-
-    // STUB Cut down the margin.
-
-    {
+    
+    { // STUB Cut down the margin.
     viennacl::matrix<NumericT> tKernel{1, 3}; tKernel(0, 1) = 1;
     viennapde::convolve<NumericT, ConvolutionType::INNER>(tVarmesh, tKernel, oVarmesh, ClrOut::YES);
     }

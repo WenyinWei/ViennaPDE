@@ -91,7 +91,7 @@ int main(int argc,char **argv)
       file.close();
     }
     viennapde::scheme::Godunov<vcl_ScalarT>(vcl_varmesh[i%2], vcl_varmesh[(i+1)%2], dt, dx);
-    // viennapde::scheme::RK3order<vcl_ScalarT>(vcl_varmesh[i%2], vcl_varmesh[(i+1)%2], dt, dx, viennapde::scheme::Godunov<vcl_ScalarT>);
+    viennapde::scheme::RK3order<vcl_ScalarT>(vcl_varmesh[i%2], vcl_varmesh[(i+1)%2], dt, dx, viennapde::scheme::Godunov<vcl_ScalarT>);
     
 
   }

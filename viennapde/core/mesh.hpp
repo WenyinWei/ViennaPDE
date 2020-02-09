@@ -244,6 +244,10 @@ public:
         }
     }
     
+    void clear()
+    {
+        for (size_t layer_i=0; layer_i< this->get_layer_num(); layer_i++)  this->at(layer_i)->clear();
+    }
 };
 
 

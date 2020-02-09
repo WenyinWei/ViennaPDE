@@ -56,7 +56,7 @@ cord2<size_t> ConvolOMatSize(
     {
         oMatSize1 = MatSize1 - 2 * iKernelHalf1;
         oMatSize2 = MatSize2 - 2 * iKernelHalf2;
-        assert(oMatSize1>=1 & oMatSize2>=1);
+        assert(oMatSize1>=1 && oMatSize2>=1);
     }
     else if constexpr (convolT==ConvolutionType::OUTER)
     {
@@ -77,6 +77,32 @@ cord2<size_t> ConvolOMatSize(
         (GridIntT)iKernel.size1(), (GridIntT)iKernel.size2());
 }
 
+template < typename NumericT, viennapde::ConvolutionType convolT >
+cord3<size_t> ConvolOMeshSize(
+    const viennapde::Varmesh<NumericT> & iVarmesh,
+    const viennapde::Varmesh<NumericT> & iKernel)
+{
+    const cord2<size_t> xySize= ConvolOMatSize<NumericT, convolT>(*iVarmesh[0], *iKernel[0]);
+    assert( iKernel.size() % 2 == 1 );
+    const size_t MeshSize3 = iKernel.size(),
+                   iKernelHalf3 = (MeshSize3-1)/2;
+          size_t oMeshSize3;
+    if constexpr (convolT==ConvolutionType::EQUIV)
+    {
+        oMeshSize3 = MeshSize3;
+    }
+    else if constexpr (convolT==ConvolutionType::INNER)
+    {
+        oMeshSize3 = MeshSize3 - 2 * iKernelHalf3;
+        assert(oMeshSize3>=1);
+    }
+    else if constexpr (convolT==ConvolutionType::OUTER)
+    {
+        oMeshSize3 = MeshSize3 + 2 * iKernelHalf3;
+    }
+    return cord3<size_t>{xySize.x, xySize.y, oMeshSize3}; 
+}
+
 // SECTION 03_002a Vermesh Convolution
 /** @brief Convolve the Varmesh data by the 2D matrix kernel, which would be the base of Varmesh shift and filter
  * @param  {viennacl::matrix<NumericT>} iKernel    : 
@@ -91,6 +117,7 @@ void convolve(
     viennacl::matrix<NumericT> & oMatrix,
     std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) // TODO ROIrc_vec, I am worrying that for the full kernel, this additional option may be speed bottleneck. 
 {
+    assert( &iMatrix != &oMatrix ); // This function not yet designed for self convolving.
     // STUB 01 Check the matrix size 
     assert( (iKernel.size1() % 2 == 1) && (iKernel.size2() % 2 == 1) );
     const size_t    iKernelHalf1 = (iKernel.size1()-1)/2,
