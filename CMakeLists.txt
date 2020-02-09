@@ -14,7 +14,7 @@ include(ViennaCLCommon)
 # set(include_dir "${CMAKE_CURRENT_LIST_DIR}/include")
 include_directories("viennapde")
 
-# Set release build:
+# Set default mode as release build:
 IF(DEFINED CMAKE_BUILD_TYPE)
  SET (CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
 ELSE()
@@ -22,7 +22,7 @@ ELSE()
 ENDIF()
 
 
-add_subdirectory(src)
+add_subdirectory(test)
 
 
 
