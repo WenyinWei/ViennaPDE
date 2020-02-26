@@ -73,10 +73,10 @@ template <  typename NumericT,
 viennapde::Varmesh<NumericT> convolve(
     viennapde::Varmesh<NumericT> & iVarmesh,
     const viennacl::matrix<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
+    std::vector<cord2<GridIntT>> & ROIrc_vec)
 {
     viennapde::Varmesh<NumericT> tVarmesh(iVarmesh.get_size_num());
-    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
+    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec);
     return tVarmesh;
 } //function viennapde::convolve
 
@@ -169,10 +169,10 @@ template <  typename NumericT,
 viennapde::Varmesh<NumericT> convolve(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     const viennapde::Varmesh<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
+    std::vector<cord2<GridIntT>> & ROIrc_vec)
 {
     viennapde::Varmesh<NumericT> tVarmesh{};
-    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
+    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec);
     return tVarmesh;
 }
 
