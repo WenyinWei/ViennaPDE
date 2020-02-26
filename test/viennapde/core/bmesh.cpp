@@ -33,7 +33,7 @@ template <typename NumericT>
 class BVarmesh : public Varmesh<NumericT>
 {
 private: 
-    cord3<size_t> margin_;
+    cord3<GridIntT> margin_;
 public:
     // NOTE Extending boundary will only be used while initializing, so the performance is not quite important.
     void extend_boundary(GridIntT iX, GridIntT iY, GridIntT iZ) 
@@ -66,15 +66,14 @@ public:
             this->push_back(std::make_shared<viennacl::matrix<NumericT>>((size_t)(Nx+2*iX), (size_t)(Ny+2*iY) ));
         }
     };
-    cord3<size_t> get_size_boundary() const { return margin_; };
-    size_t get_row_boundary() const { return margin_.x; };
-    size_t get_column_boundary() const { return margin_.y; };
-    size_t get_layer_boundary() const { return margin_.z; };
+    cord3<GridIntT> get_size_boundary() const { return margin_; };
+    GridIntT get_row_boundary() const { return margin_.x; };
+    GridIntT get_column_boundary() const { return margin_.y; };
+    GridIntT get_layer_boundary() const { return margin_.z; };
 
-    BVarmesh(const Varmesh<NumericT> & iVarmesh): Varmesh<NumericT>{iVarmesh}, margin_{0,0,0} {}; //@brief Conversion CTOR
-    BVarmesh(const BVarmesh<NumericT> & iBVarmesh): 
-        Varmesh<NumericT>{(Varmesh<NumericT>)iBVarmesh}, margin_{iBVarmesh.margin_.x,iBVarmesh.margin_.y,iBVarmesh.margin_.y} {}; //@brief COPY CTOR
-    virtual ~BVarmesh() {}; // @ DTOR
+    // CTOR
+    explicit BVarmesh(const DequeMat<NumericT> & iDequeMat): Varmesh<NumericT>{iDequeMat}, margin_{0,0,0} {};
+    virtual ~BVarmesh() {};
     // NOTE BC functions (boundary condition) will be used frequently, so their frequency are pretty important.
     void BCPeriodic() 
     {

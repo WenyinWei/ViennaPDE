@@ -1,0 +1,13 @@
+foreach(exec mesh scheme) # mesh bmesh convol_mat convol_mesh scheme 
+  add_executable(${exec} ${exec}.cpp)
+  # 设置 ViennaCL library 用的是 OpenCL 后端，你还可以设置它为 CUDA 或者 OpenMP
+  set_target_properties(${exec} PROPERTIES COMPILE_FLAGS "-DVIENNACL_WITH_OPENCL") # Guide Viennacl to use opencl mode
+  # 链接测试库
+  target_link_libraries(${exec} ${OPENCL_LIBRARIES}) # Viennacl Necessary
+  target_link_libraries(${exec}
+        ${GTEST_BOTH_LIBRARIES} 
+        pthread ) # GTest relies on pthread, which you can install by sudo apt-get install glibc-doc && sudo apt-get install manpages-posix manpages-posix-dev
+  # 添加到测试
+  gtest_discover_tests(${exec})
+endforeach()
+

@@ -19,7 +19,8 @@
 /** @file viennapde/core/scheme.hpp
     @brief Implementation of concrete scheme for PDE.
 */
-
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <functional>
 
 #include "viennacl/linalg/matrix_operations.hpp"
@@ -30,6 +31,16 @@
 // SECTION 01b Declare the image class
 namespace viennapde
 {
+// TODO: Change it to operator overloading
+template <typename NumericT>
+inline viennapde::Varmesh<NumericT> elem_geq0(viennapde::Varmesh<NumericT> & iVarmesh)
+{
+    viennapde::Varmesh<NumericT> tVarmesh{iVarmesh.get_size_num()};
+    viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(iVarmesh.get_row_num(), iVarmesh.get_column_num(), 1.0);
+    for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
+        *(tVarmesh[i]) = M_1_PI * viennacl::linalg::element_atan(*(iVarmesh[i]) * 1000.0) + scalar_mat;
+    return tVarmesh;
+}
 namespace scheme
 {
 
@@ -38,55 +49,66 @@ void Godunov(
     const viennapde::Varmesh<NumericT> & iVarmesh,
     viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx)
 {
-    viennapde::BVarmesh<NumericT> tVarmesh{(DequeMat<NumericT>)iVarmesh};
-    tVarmesh.extend_boundary(0,1,0);
-    tVarmesh.BCPeriodic();
-
+    viennapde::BVarmesh<NumericT> tBVarmesh{iVarmesh};
+    tBVarmesh.extend_boundary(0,1,0);
+    tBVarmesh.BCPeriodic();
+    viennapde::Varmesh<NumericT> & tVarmesh = tBVarmesh;
     // Calculate the u_{j+1/2}^-, u_{j+1/2}^+
-    std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, 
-                                                    t_std_varmesh_r,
-                                                    t_std_ustar_varmesh;
-    viennacl::copy(tVarmesh, t_std_varmesh_l);
-    viennacl::copy(tVarmesh, t_std_varmesh_r);
-    viennacl::copy(tVarmesh, t_std_ustar_varmesh);
+    
+    // std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, 
+    //                                                 t_std_varmesh_r,
+    //                                                 t_std_ustar_varmesh;
+    // viennacl::copy(tVarmesh, t_std_varmesh_l);
+    // viennacl::copy(tVarmesh, t_std_varmesh_r);
+    // viennacl::copy(tVarmesh, t_std_ustar_varmesh);
 
-    // Calculate the u^*
-    //TODO I have no idea how to operate this part on GPU.
-    for (size_t i = 0; i < tVarmesh.get_layer_num(); i++)
-    for (size_t j = 0; j < tVarmesh.get_row_num(); j++)
-    {
-        for (size_t k = 0; k < tVarmesh.get_column_num()-1; k++)
-        {
-            if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]>=0)) 
-            {
-                t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
-            }
-            else if ((t_std_varmesh_l[i][j][k]<=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-            {
-                t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
-            }
-            else if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-            {
-                if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] > 0)
-                {
-                    t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
-                }
-                else if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] < 0)
-                {
-                    t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
-                }
-            }
-            else if ((t_std_varmesh_l[i][j][k]<0) && (t_std_varmesh_r[i][j][k+1]>0))
-            {
-                t_std_ustar_varmesh[i][j][k]=0;
-            };
-        }
-        t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0][0].size() -1]=0;
-    }
+    // // Calculate the u^*
+    // //TODO I have no idea how to operate this part on GPU.
+    // for (size_t i = 0; i < tVarmesh.get_layer_num(); i++)
+    // for (size_t j = 0; j < tVarmesh.get_row_num(); j++)
+    // {
+    //     for (size_t k = 0; k < tVarmesh.get_column_num()-1; k++)
+    //     {
+    //         if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]>=0)) 
+    //         {
+    //             t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
+    //         }
+    //         else if ((t_std_varmesh_l[i][j][k]<=0) && (t_std_varmesh_r[i][j][k+1]<=0))
+    //         {
+    //             t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
+    //         }
+    //         else if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]<=0))
+    //         {
+    //             if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] > 0)
+    //             {
+    //                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
+    //             }
+    //             else if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] < 0)
+    //             {
+    //                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
+    //             }
+    //         }
+    //         else if ((t_std_varmesh_l[i][j][k]<0) && (t_std_varmesh_r[i][j][k+1]>0))
+    //         {
+    //             t_std_ustar_varmesh[i][j][k]=0;
+    //         };
+    //     }
+    //     t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0][0].size() -1]=0;
+    // }
+    
+    
 
     // Calculate f(u^*)
-    viennapde::Varmesh<NumericT> t_vie_ustar{t_std_ustar_varmesh};
-    viennapde::Varmesh<NumericT> t_vie_fustar{t_vie_ustar.get_size_num()};
+    viennapde::Varmesh<NumericT> t_vie_ustar{tVarmesh.get_size_num()};
+    {
+    viennacl::matrix<NumericT> tKernel{1, 3};
+    tKernel(0, 2) = 1;
+    auto   ur = viennapde::convolve<NumericT, ConvolutionType::EQUIV>(tVarmesh, tKernel);
+    viennapde::Varmesh<NumericT> & ul = tVarmesh;
+    t_vie_ustar = (ur + (ul-ur) * elem_geq0(ul)) * ((float)1.0- ((float)1.0-elem_geq0(ul))*elem_geq0(ur) );
+    // t_vie_ustar = (ur + (ul-ur) * elem_geq0(ul+ur)) * (1- (1-elem_geq0(ul))*elem_geq0(ur) );
+    }
+    viennapde::Varmesh<NumericT> t_vie_fustar{tVarmesh.get_size_num()};
     t_vie_fustar = t_vie_ustar * t_vie_ustar / 2 ;
 
     // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)

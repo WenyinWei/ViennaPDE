@@ -27,7 +27,7 @@ struct cord2
 {
     IntegerT x;
     IntegerT y;
-    explicit cord2(IntegerT iX, IntegerT iY): x{iX}, y{iY} { };
+    cord2(IntegerT iX, IntegerT iY): x{iX}, y{iY} { };
 };
 
 template <typename IntegerT>
@@ -36,8 +36,8 @@ struct cord3
     IntegerT x;
     IntegerT y;
     IntegerT z = 0;
-    explicit cord3(IntegerT iX, IntegerT iY, IntegerT iZ): x{iX}, y{iY}, z{iZ} { };
-    explicit cord3(IntegerT iX, IntegerT iY): cord3{iX, iY, 0} { };
+    cord3(IntegerT iX, IntegerT iY, IntegerT iZ): x{iX}, y{iY}, z{iZ} { };
+    cord3(IntegerT iX, IntegerT iY): cord3{iX, iY, 0} { };
 };
 
 template <typename IntegerT>

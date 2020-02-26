@@ -39,14 +39,14 @@ enum ConvolutionType
 
 template < typename NumericT, viennapde::ConvolutionType convolT >
 cord2<size_t> ConvolOMatSize(
-    const size_t MatSize1, const size_t MatSize2,
-    const size_t KerSize1, const size_t KerSize2)
+    const GridIntT MatSize1, const GridIntT MatSize2,
+    const GridIntT KerSize1, const GridIntT KerSize2)
 {
     assert( MatSize1>=1 && MatSize2>=1 && KerSize1>=1 && KerSize2>=1 );
     assert( KerSize1 % 2 == 1 && KerSize2 % 2 == 1 );
-    const size_t iKernelHalf1 = (KerSize1-1)/2;
-    const size_t iKernelHalf2 = (KerSize2-1)/2;
-    size_t oMatSize1, oMatSize2;
+    const GridIntT iKernelHalf1 = (KerSize1-1)/2;
+    const GridIntT iKernelHalf2 = (KerSize2-1)/2;
+    GridIntT oMatSize1, oMatSize2;
     if constexpr (convolT==ConvolutionType::EQUIV)
     {
         oMatSize1 = MatSize1;
@@ -73,8 +73,8 @@ cord2<size_t> ConvolOMatSize(
     const viennacl::matrix<NumericT> & iKernel)
 {
     return ConvolOMatSize<NumericT, convolT>(
-        iMatrix.size1(), iMatrix.size2(), 
-        iKernel.size1(), iKernel.size2());
+        (GridIntT)iMatrix.size1(), (GridIntT)iMatrix.size2(), 
+        (GridIntT)iKernel.size1(), (GridIntT)iKernel.size2());
 }
 
 template < typename NumericT, viennapde::ConvolutionType convolT >
@@ -100,7 +100,7 @@ cord3<size_t> ConvolOMeshSize(
     {
         oMeshSize3 = MeshSize3 + 2 * iKernelHalf3;
     }
-    return cord3<size_t>{xySize.x, xySize.y, (size_t)oMeshSize3}; 
+    return cord3<size_t>{xySize.x, xySize.y, oMeshSize3}; 
 }
 
 // SECTION 03_002a Vermesh Convolution
@@ -194,7 +194,7 @@ viennacl::matrix<NumericT> convolve(
     std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) //TODO: I guess the TODO marker can be removed. 
 {
     const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
-    viennacl::matrix<NumericT> oMatrix{(size_t)oMatSize.x, (size_t)oMatSize.y};
+    viennacl::matrix<NumericT> oMatrix{oMatSize.x, oMatSize.y};
     viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, oMatrix, ROIrc_vec, clrOut);
     return oMatrix;
 } //function void viennapde::convolve
@@ -219,8 +219,8 @@ viennacl::matrix<NumericT> convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel) 
 {
-    const cord2<GridIntT> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
-    viennacl::matrix<NumericT> oMatrix{oMatSize.x, oMatSize.y};
+    const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
+    viennacl::matrix<NumericT> oMatrix{oMatSize.first, oMatSize.second};
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)

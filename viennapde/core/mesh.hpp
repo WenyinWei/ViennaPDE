@@ -25,7 +25,9 @@
 #include <deque> // using DequeMat = std::deque<std::shared_ptr<viennacl::matrix<NumericT>>>;
 #include <memory> // std::shared_ptr
 
-
+// ViennaCL library
+#include "viennacl/matrix.hpp"
+#include "viennacl/detail/matrix_def.hpp"
 // #include "viennacl/linalg/matrix_operations.hpp"
 // #include "viennacl/linalg/sparse_matrix_operations.hpp"
 // #include "viennacl/tools/tools.hpp"
@@ -62,10 +64,10 @@ template <typename NumericT>
 void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL, 
             viennapde::Varmesh<NumericT> & oVarmesh)
 {   
-    oVarmesh->resize_ptr(iVarmeshSTL.size());
+    oVarmesh.resize_ptr(iVarmeshSTL.size());
     for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {   oVarmesh->at(layer_i).resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
-        viennacl::copy(*(iVarmeshSTL[layer_i]), *(oVarmesh[layer_i]));
+    {   oVarmesh.at(layer_i)->resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+        viennacl::copy(iVarmeshSTL[layer_i], *(oVarmesh[layer_i]));
     }
 }
 
@@ -103,17 +105,17 @@ template <typename NumericT>
 class Varmesh : public DequeMat<NumericT>
 {
 public:
-    cord3<GridIntT> get_size_num() const { return cord3( (GridIntT) this->at(0)->size1(), (GridIntT) this->at(0)->size2(), (GridIntT) this->size() ); };
-    GridIntT get_row_num()    const { return this->at(0)->size1();};
-    GridIntT get_column_num() const { return this->at(0)->size2();};
-    GridIntT get_layer_num()  const { return this->size();};
+    cord3<size_t> get_size_num() const { return cord3(this->at(0)->size1(), this->at(0)->size2(), this->size() ); };
+    size_t get_row_num()    const { return this->at(0)->size1();};
+    size_t get_column_num() const { return this->at(0)->size2();};
+    size_t get_layer_num()  const { return this->size();};
 public:
     /*===== SECTION Constructor & Destructor ==================================================== */
 
     explicit Varmesh(
         const typename DequeMat<NumericT>::iterator & first, 
         const typename DequeMat<NumericT>::iterator & last) : DequeMat<NumericT>{first, last} {}; // @brief Range CTOR inherited from std::deque
-    explicit Varmesh(cord3<GridIntT> size_cord3): Varmesh(size_cord3.x, size_cord3.y, size_cord3.z) {};
+    explicit Varmesh(cord3<size_t> size_cord3): Varmesh(size_cord3.x, size_cord3.y, size_cord3.z) {};
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 
      * @param  {size_t} row_num     : 
@@ -134,19 +136,16 @@ public:
             for (GridIntT layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
                 viennacl::copy(iVarmeshSTL[layer_i], *(this->at(layer_i)));
         };
-    /** @brief Copy Constructor 
-     * @param  {Varmesh<NumericT>} iDequeMat : 
-     */
-    Varmesh(const DequeMat<NumericT> & iDequeMat):
-        DequeMat<NumericT> {iDequeMat.size()}
+    /** @brief Copy Constructor */
+    Varmesh(const Varmesh<NumericT> & iVarmesh):
+        DequeMat<NumericT> {iVarmesh.size()}
         {   
-            for (GridIntT layer_i = 0; layer_i < iDequeMat.size(); layer_i++)
+            for (GridIntT layer_i = 0; layer_i < iVarmesh.size(); layer_i++)
             {
                 this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>();
-                *(this->at(layer_i)) = *(iDequeMat[layer_i]);
+                *(this->at(layer_i)) = *(iVarmesh[layer_i]);
             }
         };
-    Varmesh(const Varmesh<NumericT> & iVarmesh): Varmesh((DequeMat<NumericT>)iVarmesh) {};
     /** @brief  Move Constructor */
     Varmesh(Varmesh<NumericT> && iVarmesh):
         DequeMat<NumericT> {iVarmesh.size()}
@@ -166,8 +165,7 @@ public:
     /** @brief Copy Assignment */
     Varmesh<NumericT>& operator= (Varmesh<NumericT> & iVarmesh) = delete; // Only allow copy constructor to work for copying
     /** @brief Move Assignment */
-    Varmesh<NumericT>& operator= (Varmesh<NumericT> && iVarmesh) 
-    {
+    Varmesh<NumericT>& operator= (Varmesh<NumericT> && iVarmesh) {
         this->resize(this->get_layer_num());
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             this->at(i) = iVarmesh[i];
@@ -175,28 +173,134 @@ public:
         iVarmesh.shrink_to_fit();
         return *this; 
     };
-    Varmesh<NumericT>& operator+= (const Varmesh<NumericT> & iVarmesh) 
-    {
+    Varmesh<NumericT>& operator+= (const Varmesh<NumericT> & iVarmesh) {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += *(iVarmesh[i]);
         return *this;
     }
-    Varmesh<NumericT>& operator-= (const Varmesh<NumericT> & iVarmesh) 
-    {
+    Varmesh<NumericT>& operator-= (const Varmesh<NumericT> & iVarmesh) {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i))  -= *(iVarmesh[i]);
         return *this;
     }
-    Varmesh<NumericT>& operator*= (const Varmesh<NumericT> & iVarmesh) 
-    {
+    Varmesh<NumericT>& operator*= (const Varmesh<NumericT> & iVarmesh) {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) = viennacl::linalg::element_prod( *(this->at(i)), *(iVarmesh[i]));
         return *this;
     }
-    Varmesh<NumericT>& operator/= (const Varmesh<NumericT> & iVarmesh) 
-    {
+    Varmesh<NumericT>& operator/= (const Varmesh<NumericT> & iVarmesh) {
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) = viennacl::linalg::element_div( *(this->at(i)), *(iVarmesh[i]));
+        return *this;
+    }
+    Varmesh<NumericT>& operator+= (const char & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) += scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator-= (const char & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) -= scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator*= (const char & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) *= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator/= (const char & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) /= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator+= (const short & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) += scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator-= (const short & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) -= scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator*= (const short & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) *= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator/= (const short & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) /= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator+= (const int & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) += scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator-= (const int & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) -= scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator*= (const int & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) *= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator/= (const int & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) /= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator+= (const float & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) += scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator-= (const float & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) -= scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator*= (const float & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) *= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator/= (const float & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) /= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator+= (const double & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) += scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator-= (const double & iNum) {
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) -= scalar_mat;
+        return *this;
+    }
+    Varmesh<NumericT>& operator*= (const double & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) *= iNum;
+        return *this;
+    }
+    Varmesh<NumericT>& operator/= (const double & iNum) {
+        for (GridIntT i = 0; i < this->get_layer_num(); i++)
+            *(this->at(i)) /= iNum;
         return *this;
     }
 
@@ -229,7 +333,8 @@ public:
                     this->at(i) = std::make_shared<viennacl::matrix<NumericT>>(this->get_row_num(), this->get_column_num());
             } else if (!(this->empty()) && Nx!=0 && Ny!=0 && Nx!=this->get_row_num() && Ny!=this->get_column_num())
             {
-                std::cerr << "Mesh::Resize_ptr function, original size is different from your input matrix size.\n";
+                std::cerr << "Mesh::Resize_ptr function, original size is different from your input matrix size.\n"
+                    << "Please check your mesh size or use clear method first.\n";
             } else if (this->empty() && Nx!=0 && Ny!=0)
             {
                 for (GridIntT i = old_Nz; i < Nz; i++)
@@ -254,85 +359,66 @@ public:
 
 /*===== SECTION Operator Overloading ======================================== */
 template <typename NumericT>
-inline Varmesh<NumericT> operator+ (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) 
-{
+inline Varmesh<NumericT> operator+ (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) {
     lhs += rhs;
     return lhs;
 }
 template <typename NumericT>
-inline Varmesh<NumericT> operator- (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) 
-{
+inline Varmesh<NumericT> operator- (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) {
     lhs -= rhs;
     return lhs;
 }
 template <typename NumericT>
-inline Varmesh<NumericT> operator* (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) 
-{
+inline Varmesh<NumericT> operator* (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) {
     lhs *= rhs;
     return lhs;
 }
 template <typename NumericT>
-inline Varmesh<NumericT> operator/ (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) 
-{
+inline Varmesh<NumericT> operator/ (Varmesh<NumericT> lhs, const Varmesh<NumericT> & rhs) {
     lhs /= rhs;
     return lhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator+ (Varmesh<NumericT_l> lhs, NumericT_r rhs) 
-{
-    for (GridIntT i = 0; i < lhs.get_layer_num(); i++)
-        *(lhs[i]) += rhs;
+inline Varmesh<NumericT_l> operator+ (Varmesh<NumericT_l> lhs, NumericT_r rhs) {
+    lhs += rhs;
     return lhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator- (Varmesh<NumericT_l> lhs, NumericT_r rhs) 
-{
-    for (GridIntT i = 0; i < lhs.get_layer_num(); i++)
-        *(lhs[i]) -= rhs;
+inline Varmesh<NumericT_l> operator- (Varmesh<NumericT_l> lhs, NumericT_r rhs) {
+    lhs -= rhs;
     return lhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator* (Varmesh<NumericT_l> lhs, NumericT_r rhs) 
-{
-    for (GridIntT i = 0; i < lhs.get_layer_num(); i++)
-        *(lhs[i]) *= rhs;
+inline Varmesh<NumericT_l> operator* (Varmesh<NumericT_l> lhs, NumericT_r rhs) {
+    lhs *= rhs;
     return lhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator/ (Varmesh<NumericT_l> lhs, NumericT_r rhs) 
-{
-    for (GridIntT i = 0; i < lhs.get_layer_num(); i++)
-        *(lhs[i]) /= rhs;
+inline Varmesh<NumericT_l> operator/ (Varmesh<NumericT_l> lhs, NumericT_r rhs) {
+    lhs /= rhs;
     return lhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator+ (NumericT_l lhs, Varmesh<NumericT_r> rhs) 
-{
-    for (GridIntT i = 0; i < rhs.get_layer_num(); i++)
-        *(rhs[i]) += lhs;
+inline Varmesh<NumericT_l> operator+ (NumericT_l lhs, Varmesh<NumericT_r> rhs) {
+    rhs += lhs;
     return rhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator- (NumericT_l lhs, Varmesh<NumericT_r> rhs) 
-{
-    for (GridIntT i = 0; i < rhs.get_layer_num(); i++)
-        *(rhs[i]) -= lhs;
+inline Varmesh<NumericT_l> operator- (NumericT_l lhs, Varmesh<NumericT_r> rhs) {
+    rhs -= lhs;
     return rhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator* (NumericT_l lhs, Varmesh<NumericT_r> rhs) 
-{
-    for (GridIntT i = 0; i < rhs.get_layer_num(); i++)
-        *(rhs[i]) *= lhs;
+inline Varmesh<NumericT_l> operator* (NumericT_l lhs, Varmesh<NumericT_r> rhs) {
+    rhs *= lhs;
     return rhs;
 }
 template <typename NumericT_l, typename NumericT_r>
-inline Varmesh<NumericT_l> operator/ (NumericT_l lhs, Varmesh<NumericT_r> rhs) 
-{
-    for (GridIntT i = 0; i < rhs.get_layer_num(); i++)
-        *(rhs[i]) /= lhs;
+inline Varmesh<NumericT_l> operator/ (NumericT_l lhs, Varmesh<NumericT_r> rhs) {
+    rhs /= lhs;
     return rhs;
 }
 } //namespace viennapde
+
 
 
