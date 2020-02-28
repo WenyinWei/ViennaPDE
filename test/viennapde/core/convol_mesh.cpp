@@ -1,4 +1,3 @@
-#pragma once
 /* =========================================================================
    Copyright (c) 2010-2020, Department of Engineering Physics,
                             Tsinghua University, Beijing, China.
@@ -16,199 +15,392 @@
    License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
-/** @file viennapde/core/convol_mesh.hpp
-    @brief Convolve operation on Varmesh class. 
-    All functions in this file are overloaded of viennapde::convolve working on the Varmesh class. 
+/** @file test/viennapde/core/convol_mesh.cpp
+    @brief TEST: Convolve operation on Varmesh class. All functions in this file are overloaded of viennapde::convolve working on the Varmesh class. 
     TODO Not yet and verified.
 */
+
+
+
+#include <cmath>
 #include <vector>
 
-#include "viennacl/matrix.hpp"
-#include "./mesh.hpp"
-#include "./convol_mat.hpp"
+#include "gtest/gtest.h"
+#include "viennapde/test/EXPECT_MESH_EQ.hpp"
 
-namespace viennapde
-{
+#include "viennapde/core/convol_mesh.hpp"
 
-/*===== SECTION Convolve Mesh --Mat-> Mesh ==================================================== */
-// TODO totally change the comment & plut the output initialization & temp Varmesh removal
-// SECTION 03_002a Varmesh Convolution
-/** @brief Convolve the Varmesh data by the 2D matrix kernel, which would be the base of Varmesh shift and filter
- * 
- * @param  {viennacl::matrix<NumericT>} iKernel    : 
- * @param  {std::vector<std::pair<size_t} undefined : 
- * @param  {size_t>>} ROIxy_vec                     : 
- * 
- */
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-void convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennacl::matrix<NumericT> & iKernel,
-    viennapde::Varmesh<NumericT> & oVarmesh,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
+
+
+typedef float                         vcl_ScalarT;
+typedef viennacl::vector<vcl_ScalarT> vcl_VectorT;
+typedef viennacl::matrix<vcl_ScalarT> vcl_MatrixT;
+typedef std::vector<std::vector<std::vector<vcl_ScalarT>>>
+                                      stl_MeshT;
+
+
+TEST(Convol, MatonMesh_INNER)
 {
-    const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(*iVarmesh[0], iKernel);
-    oVarmesh.resize_ptr(iVarmesh.get_layer_num(), oMatSize.x, oMatSize.y); // I suggest to use a completely new mesh object.
-    if (clrOut == ClrOut::YES)
-    {
-        for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
-            *(oVarmesh[layer_i]) = viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]), iKernel, ROIrc_vec, clrOut);
-    } else //(clrOut == ClrOut::NO)
-    {
-        for (size_t layer_i=0; layer_i< iVarmesh.get_layer_num(); layer_i++) 
-            *(oVarmesh[layer_i]) += viennapde::convolve<NumericT, convolT>(*(iVarmesh[layer_i]), iKernel, ROIrc_vec, clrOut);
+  constexpr auto convolT = viennapde::ConvolutionType::INNER;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
+
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
     }
-    
-} //function void viennapde::convolve
+  }
+  
 
-
-
-// SECTION 01_002b Mesh Convolution
-/** @brief the same as the convolve funciton 01_002a, just the default ROI becomes the whole matrix.
- * @param  {viennacl::matrix<NumericT>} iKernel : 
- */
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> convolve(
-    viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennacl::matrix<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
-{
-    viennapde::Varmesh<NumericT> tVarmesh(iVarmesh.get_size_num());
-    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
-    return tVarmesh;
-} //function viennapde::convolve
-
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-void convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennacl::matrix<NumericT> & iKernel,
-    viennapde::Varmesh<NumericT> & oVarmesh, ClrOut clrOut = ClrOut::YES) 
-{
-    std::vector<cord2<GridIntT>> ROIrc_vec{}; 
-    for (size_t i = 0; i < iKernel.size1(); i++)
-    for (size_t j = 0; j < iKernel.size2(); j++)
-        ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, clrOut);
-} //function void viennapde::convolve
-
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennacl::matrix<NumericT> & iKernel) 
-{
-    const std::pair <size_t, size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(
-        iVarmesh.get_row_num(), iVarmesh.get_column_num(), iKernel.size1(), iKernel.size2());    
-    viennacl::matrix<NumericT> oVarmesh{oMatSize.first, oMatSize.second, iVarmesh.get_layer_num()};
-    std::vector<cord2<GridIntT>> ROIrc_vec{}; 
-    for (size_t i = 0; i < iKernel.size1(); i++)
-    for (size_t j = 0; j < iKernel.size2(); j++)
-        ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, ClrOut::YES);
-    return oVarmesh;
-} //function void viennapde::convolve
-
-
-
-/*===== SECTION Convolve Mesh --Mesh-> Mesh ==================================================== */
-
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-void convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennapde::Varmesh<NumericT> & iKernel,
-    viennapde::Varmesh<NumericT> & oVarmesh,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
-{
-    cord3<size_t> oMeshSize = ConvolOMeshSize(iVarmesh, iKernel);
-    oVarmesh.resize_ptr(oMeshSize.z, oMeshSize.x, oMeshSize.y);
-    if (clrOut == ClrOut::YES) oVarmesh.clear();
-    if constexpr (convolT==ConvolutionType::OUTER)
-    {
-        for (ssize_t layer_i=-(iKernel.get_layer_num()-1)/2; layer_i< (iKernel.get_layer_num()-1)/2+1; layer_i++) 
-            viennapde::convolve<NumericT, convolT>(
-                iVarmesh, 
-                iKernel[layer_i+(iKernel.get_layer_num()-1)/2], 
-                viennapde::Varmesh<NumericT>{
-                    oVarmesh.begin() + (iKernel.get_layer_num()-1)/2 - layer_i, 
-                    oVarmesh.begin() + (iKernel.get_layer_num()-1)/2 - layer_i + iVarmesh.get_layer_num()}, 
-                ROIrc_vec, ClrOut::NO);
-    } else if constexpr (convolT==ConvolutionType::EQUIV)
-    {   
-        for (ssize_t layer_i=-(iKernel.get_layer_num()-1)/2; layer_i< (iKernel.get_layer_num()-1)/2+1; layer_i++) 
-            viennapde::convolve<NumericT, convolT>(
-                viennapde::Varmesh<NumericT>{
-                    iVarmesh.begin() + std::max(layer_i,(ssize_t)0), 
-                    iVarmesh.begin() + std::min(layer_i,(ssize_t)0) + iVarmesh.get_layer_num()}, 
-                iKernel[layer_i+(iKernel.get_layer_num()-1)/2], 
-                viennapde::Varmesh<NumericT>{
-                    oVarmesh.begin() - std::min(layer_i,(ssize_t)0), 
-                    oVarmesh.begin() - std::max(layer_i,(ssize_t)0) + iVarmesh.get_layer_num()}, 
-                ROIrc_vec, ClrOut::NO);
-    } else if constexpr (convolT==ConvolutionType::INNER)
-    {   
-        for (ssize_t layer_i=-(iKernel.get_layer_num()-1)/2; layer_i< (iKernel.get_layer_num()-1)/2+1; layer_i++) 
-            viennapde::convolve<NumericT, convolT>(
-                viennapde::Varmesh<NumericT>{
-                    iVarmesh.begin() + layer_i + (iKernel.get_layer_num()-1)/2, 
-                    iVarmesh.begin() + layer_i + (iKernel.get_layer_num()-1)/2 + oVarmesh.get_layer_num()}, 
-                iKernel[layer_i+(iKernel.get_layer_num()-1)/2], 
-                oVarmesh, 
-                ROIrc_vec, ClrOut::NO);
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennacl::matrix<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[1]
+  for (size_t row_i=0; row_i < kernel_size1; row_i++) {
+    for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+      vcl_ker_vec[0](row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      vcl_ker_vec[1](row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
     }
-    
-     
-} //function void viennapde::convolve
+  }
 
-
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennapde::Varmesh<NumericT> & iKernel,
-    std::vector<cord2<GridIntT>> & ROIrc_vec, ClrOut clrOut = ClrOut::YES)
-{
-    viennapde::Varmesh<NumericT> tVarmesh{};
-    viennapde::convolve<NumericT, convolT>(iVarmesh, iKernel, tVarmesh, ROIrc_vec, clrOut);
-    return tVarmesh;
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
 }
 
 
-// TODO The Mesh convolved by mesh operation is contains kernel elements as 3D cord. Change the cord from 2D to 3D.
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-void convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennapde::Varmesh<NumericT> & iKernel,
-    viennapde::Varmesh<NumericT> & oVarmesh, ClrOut clrOut = ClrOut::YES) 
+TEST(Convol, MatonMesh_OUTER)
 {
-    std::vector<cord2<GridIntT>> ROIrc_vec{}; 
-    for (size_t i = 0; i < iKernel.size1(); i++)
-    for (size_t j = 0; j < iKernel.size2(); j++)
-        ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, clrOut);
-} //function void viennapde::convolve
+  constexpr auto convolT = viennapde::ConvolutionType::OUTER;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
 
-template <  typename NumericT, 
-            viennapde::ConvolutionType convolT = EQUIV>
-viennapde::Varmesh<NumericT> convolve(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennapde::Varmesh<NumericT> & iKernel) 
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
+    }
+  }
+  
+
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennacl::matrix<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[1]
+  for (size_t row_i=0; row_i < kernel_size1; row_i++) {
+    for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+      vcl_ker_vec[0](row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      vcl_ker_vec[1](row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
+    }
+  }
+
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+}
+
+
+TEST(Convol, MatonMesh_EQUIV)
 {
-    const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(
-        iVarmesh.get_row_num(), iVarmesh.get_column_num(), iKernel.size1(), iKernel.size2());    
-    viennacl::matrix<NumericT> oVarmesh{oMatSize.x, oMatSize.y, iVarmesh.get_layer_num()};
-    std::vector<cord2<GridIntT>> ROIrc_vec{}; 
-    for (size_t i = 0; i < iKernel.size1(); i++)
-    for (size_t j = 0; j < iKernel.size2(); j++)
-        ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iVarmesh, iKernel, oVarmesh, ROIrc_vec, ClrOut::YES);
-    return oVarmesh;
-} //function void viennapde::convolve
+  constexpr auto convolT = viennapde::ConvolutionType::EQUIV;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
 
-} //namespace viennapde
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
+    }
+  }
+  
+
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennacl::matrix<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2); // vcl_ker_vec[1]
+  for (size_t row_i=0; row_i < kernel_size1; row_i++) {
+    for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+      vcl_ker_vec[0](row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      vcl_ker_vec[1](row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
+    }
+  }
+
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+}
 
 
+
+TEST(Convol, MeshonMesh_OUTER)
+{
+  constexpr auto convolT = viennapde::ConvolutionType::OUTER;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3, kernel_size3 = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
+
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
+    }
+  }
+  
+
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
+  for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
+    for (size_t row_i=0; row_i < kernel_size1; row_i++) {
+        for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+            (*(vcl_ker_vec[0][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+            (*(vcl_ker_vec[1][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
+        }
+    }
+  
+
+
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+}
+
+TEST(Convol, MeshonMesh_EQUIV)
+{
+  constexpr auto convolT = viennapde::ConvolutionType::EQUIV;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3, kernel_size3 = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
+
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
+    }
+  }
+  
+
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
+  for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
+    for (size_t row_i=0; row_i < kernel_size1; row_i++) {
+        for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+            (*(vcl_ker_vec[0][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+            (*(vcl_ker_vec[1][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
+        }
+    }
+  
+
+
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+}
+
+TEST(Convol, MeshonMesh_INNER)
+{
+  constexpr auto convolT = viennapde::ConvolutionType::INNER;
+  size_t row_num = 3, kernel_size1 = 3;
+  size_t column_num = 3, kernel_size2 = 3;
+  size_t layer_num = 3, kernel_size3 = 3;
+  vcl_ScalarT dx = 1.0;
+  
+  stl_MeshT  stl_mesh{layer_num};
+
+  for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
+    stl_mesh[layer_i].resize(row_num);
+    for (size_t row_i=0; row_i < row_num; row_i++) {
+      stl_mesh[layer_i][row_i].resize(column_num);
+      for (size_t column_i= 0; column_i < column_num; column_i++) {
+        stl_mesh[layer_i][row_i][column_i] = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+      }
+    }
+  }
+  
+
+  // SECTION 02 COPY interface with other classes
+  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
+  viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
+  
+  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
+  vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
+  for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
+    for (size_t row_i=0; row_i < kernel_size1; row_i++) 
+        for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+            (*(vcl_ker_vec[0][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (std::sin(column_i*dx)/3*2+1/3);
+            (*(vcl_ker_vec[1][layer_i]))(row_i, column_i) = static_cast<vcl_ScalarT> (-std::sin(column_i*dx)/3*2-1/3);
+        }
+
+  std::vector< stl_MeshT >  stl_mesh_vec_after{2};
+  
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1], vcl_mesh_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+  
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[0]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[0]);
+  vcl_mesh_vec[1] = viennapde::convolve<vcl_ScalarT, convolT>(
+      vcl_mesh_vec[0], vcl_ker_vec[1]);
+  viennacl::copy(vcl_mesh_vec[1], stl_mesh_vec_after[1]);
+  EXPECT_MESH_NEGATIVE_EQ(stl_mesh_vec_after[0], stl_mesh_vec_after[1], 
+    "Value results are not right by a kernel and its negative corresponding one.");
+
+  float result = 0;
+  for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
+    for (size_t row_i=0; row_i < kernel_size1; row_i++) 
+        for (size_t column_i= 0; column_i < kernel_size2; column_i++) {
+            result += (*(vcl_mesh_vec[0][layer_i]))(row_i, column_num) * (*(vcl_ker_vec[0][layer_i]))(row_i, column_i);
+        }
+  EXPECT_EQ(result, stl_mesh_vec_after[0][0][0][0]) << "The result is not right under a 3*3*3 mesh convolved by a 3*3*3 mesh ker.\n";
+}

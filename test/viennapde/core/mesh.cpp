@@ -24,26 +24,13 @@
 #include "gtest/gtest.h"
 
 #include "viennapde/core/mesh.hpp"
+#include "viennapde/test/EXPECT_MESH_EQ.hpp" 
 
 typedef float                         vcl_ScalarT;
 typedef viennacl::vector<vcl_ScalarT> vcl_VectorT;
 typedef viennacl::matrix<vcl_ScalarT> vcl_MatrixT;
 typedef std::vector<std::vector<std::vector<vcl_ScalarT>>>
                                       stl_MeshT;
-
-void EXPECT_MESH_EQ(stl_MeshT & A, stl_MeshT & B, std::string err_info) {
-  for (size_t layer_i=0; layer_i< A.size(); layer_i++) {
-    for (size_t row_i=0; row_i < A[0].size(); row_i++) {
-      for (size_t column_i= 0; column_i < A[0][0].size(); column_i++) {
-        if constexpr (std::is_same<vcl_ScalarT, float>::value) {
-          EXPECT_FLOAT_EQ( A[layer_i][row_i][column_i], B[layer_i][row_i][column_i]) << err_info;
-        } else if constexpr (std::is_same<vcl_ScalarT, double>::value) {
-          EXPECT_DOUBLE_EQ(A[layer_i][row_i][column_i], B[layer_i][row_i][column_i]) << err_info;
-        } else {FAIL() << "Specify your wanted scalar value type to test, float or double?";}
-      }
-    }
-  }
-}
 
 TEST(MeshClass, copy)
 {

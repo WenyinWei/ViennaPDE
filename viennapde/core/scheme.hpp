@@ -26,7 +26,7 @@
 #include "viennacl/linalg/matrix_operations.hpp"
 #include "viennapde/core/mesh.hpp"
 #include "viennapde/core/bmesh.hpp"
-#include "./convol_mesh.hpp"
+#include "viennapde/core/convol_mesh.hpp"
 
 // SECTION 01b Declare the image class
 namespace viennapde

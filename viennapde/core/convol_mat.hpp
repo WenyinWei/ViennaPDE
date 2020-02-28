@@ -24,7 +24,8 @@
 
 #include "viennacl/matrix.hpp"
 
-
+#include "viennapde/core/cord.hpp"
+#include "viennapde/core/mesh.hpp"
 
 namespace viennapde
 {
@@ -117,18 +118,29 @@ void convolve(
     viennacl::matrix<NumericT> & oMatrix,
     std::vector<cord2<GridIntT>>& ROIrc_vec, ClrOut clrOut = ClrOut::YES) // TODO ROIrc_vec, I am worrying that for the full kernel, this additional option may be speed bottleneck. 
 {
-    assert( &iMatrix != &oMatrix ); // This function not yet designed for self convolving.
+    assert( &iMatrix != &oMatrix ); // TODO: This function not yet designed for self convolving.
     // STUB 01 Check the matrix size 
     assert( (iKernel.size1() % 2 == 1) && (iKernel.size2() % 2 == 1) );
     const size_t    iKernelHalf1 = (iKernel.size1()-1)/2,
                     iKernelHalf2 = (iKernel.size2()-1)/2;
-    if constexpr (convolT==EQUIV) {
-        assert(iMatrix.size1()==oMatrix.size1() && iMatrix.size2()==oMatrix.size2());
-    } else if constexpr (convolT==INNER) {
-        assert(iMatrix.size1()==oMatrix.size1()+2*iKernelHalf1 && iMatrix.size2()==oMatrix.size2()+2*iKernelHalf2);
-    } else if constexpr (convolT==OUTER) {
-        assert(iMatrix.size1()==oMatrix.size1()-2*iKernelHalf1 && iMatrix.size2()==oMatrix.size2()-2*iKernelHalf2);
+    if (clrOut==ClrOut::YES) {
+        if constexpr (convolT==EQUIV) {
+            oMatrix.resize(iMatrix.size1(), iMatrix.size2(), false);
+        } else if constexpr (convolT==INNER) {
+            oMatrix.resize(iMatrix.size1()+2*iKernelHalf1, iMatrix.size2()+2*iKernelHalf2, false);
+        } else if constexpr (convolT==OUTER) {
+            oMatrix.resize(iMatrix.size1()-2*iKernelHalf1, iMatrix.size2()-2*iKernelHalf2, false);
+        }
+    } else {
+        if constexpr (convolT==EQUIV) {
+            assert(iMatrix.size1()==oMatrix.size1() && iMatrix.size2()==oMatrix.size2());
+        } else if constexpr (convolT==INNER) {
+            assert(iMatrix.size1()==oMatrix.size1()+2*iKernelHalf1 && iMatrix.size2()==oMatrix.size2()+2*iKernelHalf2);
+        } else if constexpr (convolT==OUTER) {
+            assert(iMatrix.size1()==oMatrix.size1()-2*iKernelHalf1 && iMatrix.size2()==oMatrix.size2()-2*iKernelHalf2);
+        }
     }
+
     
     
     // STUB 02 Multiply the scalar and contribute to the final Varmesh.
@@ -210,7 +222,7 @@ void convolve(
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iMatrix, iKernel, oMatrix, ROIrc_vec, clrOut);
+    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, oMatrix, ROIrc_vec, clrOut);
 } //function void viennapde::convolve
 
 template <  typename NumericT, 
@@ -219,13 +231,13 @@ viennacl::matrix<NumericT> convolve(
     const viennacl::matrix<NumericT> & iMatrix,
     const viennacl::matrix<NumericT> & iKernel) 
 {
-    const cord2<GridIntT> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
+    const cord2<size_t> oMatSize = ConvolOMatSize<NumericT, convolT>(iMatrix, iKernel);    
     viennacl::matrix<NumericT> oMatrix{oMatSize.x, oMatSize.y};
     std::vector<cord2<GridIntT>> ROIrc_vec{}; 
     for (size_t i = 0; i < iKernel.size1(); i++)
     for (size_t j = 0; j < iKernel.size2(); j++)
         ROIrc_vec.push_back(cord2<GridIntT>(i, j));
-    viennapde::convolve(iMatrix, iKernel, oMatrix, ROIrc_vec);
+    viennapde::convolve<NumericT, convolT>(iMatrix, iKernel, oMatrix, ROIrc_vec);
     return oMatrix;
 } //function void viennapde::convolve
 
