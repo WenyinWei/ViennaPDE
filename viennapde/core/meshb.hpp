@@ -45,10 +45,8 @@ private:
     // cord3<BoundaryCondition> BC_;
     // std::weak_ptr<meshb> x_neg, x_pos, y_neg, y_pos, z_neg, z_pos;
 public:
-
-    meshb(mesh<NumericT> & iMesh): mesh_ref_{iMesh}, margin_{0,0,0} {}; //@brief CTOR
-    // explicit meshb(cord3<size_t> size_cord3): mesh(size_cord3.x, size_cord3.y, size_cord3.z), margin_{0,0,0} {};
-    // ~meshb() {}; // @ DTOR
+    meshb(mesh<NumericT> & iMesh): mesh_ref_{iMesh}, margin_{0,0,0} {iMesh.bdry_ptr_ = this;}; //@brief CTOR
+    ~meshb() {mesh_ref_.bdry_ptr_ = nullptr;}; // @ DTOR
 
     cord3<size_t> get_margin() {return cord3(get_marginx(), get_marginy(), get_marginz());}
     size_t get_marginx() {return margin_.x;}
@@ -92,7 +90,7 @@ public:
     };
 
     // NOTE BC functions (boundary condition) will be used frequently, so their performance are pretty important.
-    void refreshBC() 
+    void refresh() 
     {
         const size_t bx = margin_.x,
                      by = margin_.y,
@@ -103,7 +101,7 @@ public:
 
         for (size_t i = bz; i < Nz - bz; i++)
         {
-            {// Row Range Override
+            {// Row Boundary Data Transfer
                 viennacl::range submat_row_range_from(Nx-2*bx, Nx-bx),
                                 submat_column_range_from(by, Ny-by),
                                 submat_row_range_to(0, bx), 
@@ -123,7 +121,7 @@ public:
                     submatrix_to(*(mesh_ref_[i]), submat_row_range_to, submat_column_range_to); 
                 submatrix_to = submatrix_from;
             }
-            {// Column Range Override
+            {// Column Boundary Data Transfer
                 viennacl::range submat_row_range_from(0, Nx),
                                 submat_column_range_from(by, 2*by),
                                 submat_row_range_to(0, Nx), 
@@ -144,7 +142,7 @@ public:
                 submatrix_to = submatrix_from;
             }
         }
-
+        // Layer Boundary Data Transfer
         for (size_t i = 0; i < bz; i++)
             *(mesh_ref_[i]) = *(mesh_ref_[i+Nz-2*bz]);
         for (size_t i = Nz-bz; i < Nz; i++)

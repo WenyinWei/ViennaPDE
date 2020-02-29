@@ -106,6 +106,7 @@ template <typename NumericT>
 class mesh : public DequeMat<NumericT>
 {
     friend class meshb<NumericT>;
+    meshb<NumericT>* bdry_ptr_ = nullptr;
 public:
     cord3<size_t> get_size_num() const { return cord3(get_row_num(), get_column_num(), this->size() ); };
     size_t get_row_num()    const { return this->empty() ? 0 : this->at(0)->size1();};
@@ -114,9 +115,7 @@ public:
 public:
     /*===== SECTION Constructor & Destructor ==================================================== */
     template <class InputIterator>
-    mesh(
-        InputIterator first, 
-        InputIterator last) : DequeMat<NumericT>{first, last} {}; // @brief Range CTOR inherited from std::deque
+    mesh(InputIterator first, InputIterator last) : DequeMat<NumericT>{first, last} {}; // @brief Range CTOR inherited from std::deque
     explicit mesh(cord3<size_t> size_cord3): mesh(size_cord3.x, size_cord3.y, size_cord3.z) {};
     /** @brief Constuctor for the varmesh class by an existing 3D std::vector class
      * @param  {size_t} layer_num   : 

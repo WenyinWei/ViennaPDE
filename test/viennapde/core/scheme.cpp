@@ -60,14 +60,14 @@ TEST(Scheme, Godunov)
 
   viennapde::meshb mb(vcl_mesh);
   mb.extend(0, 1, 0);
-  mb.refreshBC();
+  mb.refresh();
   
   
   std::ofstream file; 
   const size_t by = mb.get_marginy();
   for (size_t i = 0; i * dt < TotalTime; i++)
   {
-    mb.refreshBC();
+    mb.refresh();
     viennacl::copy(vcl_mesh, stl_mesh);
     file.open(data_folder + std::to_string(i) + ".csv");
     if (file.is_open())

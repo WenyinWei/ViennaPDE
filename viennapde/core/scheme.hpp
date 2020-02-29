@@ -44,60 +44,18 @@ inline mesh<NumericT> elem_geq0(const mesh<NumericT> & iMesh)
 
 namespace scheme
 {
-
+// This func requires extend_boundary(0,1,1);
 template <typename NumericT>
-mesh<NumericT> Godunov(
-    const mesh<NumericT> & iMesh, // This func requires extend_boundary(0,1,1);
-    NumericT dt, NumericT dx)
+/**
+ * @brief Impose 1D scheme Godunov based on the shock and rarefaction analysis on the Burger's equation. Requires (0, 1, 0) or more boundary.
+ * @param  {const mesh<NumericT> &} iMesh : 
+ * @param  {NumericT} dt                  : 
+ * @param  {NumericT} dx                  : 
+ * @return {mesh<NumericT>}               : 
+ */
+mesh<NumericT> Godunov(const mesh<NumericT> & iMesh, NumericT dt, NumericT dx)
 {
-    // iMesh.check_boundary(0,1,0);
-    // iMesh.BCPeriodic();
-
-    // Calculate the u_{j+1/2}^-, u_{j+1/2}^+
     
-    // std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, 
-    //                                                 t_std_varmesh_r,
-    //                                                 t_std_ustar_varmesh;
-    // viennacl::copy(tMesh, t_std_varmesh_l);
-    // viennacl::copy(tMesh, t_std_varmesh_r);
-    // viennacl::copy(tMesh, t_std_ustar_varmesh);
-
-    // // Calculate the u^*
-    // //TODO I have no idea how to operate this part on GPU.
-    // for (size_t i = 0; i < tMesh.get_layer_num(); i++)
-    // for (size_t j = 0; j < tMesh.get_row_num(); j++)
-    // {
-    //     for (size_t k = 0; k < tMesh.get_column_num()-1; k++)
-    //     {
-    //         if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]>=0)) 
-    //         {
-    //             t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
-    //         }
-    //         else if ((t_std_varmesh_l[i][j][k]<=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-    //         {
-    //             t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
-    //         }
-    //         else if ((t_std_varmesh_l[i][j][k]>=0) && (t_std_varmesh_r[i][j][k+1]<=0))
-    //         {
-    //             if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] > 0)
-    //             {
-    //                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_l[i][j][k];
-    //             }
-    //             else if (t_std_varmesh_l[i][j][k] + t_std_varmesh_r[i][j][k+1] < 0)
-    //             {
-    //                 t_std_ustar_varmesh[i][j][k]=t_std_varmesh_r[i][j][k+1];
-    //             }
-    //         }
-    //         else if ((t_std_varmesh_l[i][j][k]<0) && (t_std_varmesh_r[i][j][k+1]>0))
-    //         {
-    //             t_std_ustar_varmesh[i][j][k]=0;
-    //         };
-    //     }
-    //     t_std_ustar_varmesh[i][j][t_std_ustar_varmesh[0][0].size() -1]=0;
-    // }
-    
-    
-
     // Calculate f(u^*)
     mesh<NumericT> fustar{iMesh.get_size_num()};
     {
@@ -120,28 +78,12 @@ mesh<NumericT> Godunov(
     // Time Forward, attention this is a temporarlly extended mesh to suffice the need of periodic B.C..
     mesh<NumericT> oMesh = iMesh - fustardiff * (dt / dx);
     return oMesh;
-    // // Test Output Part Make it a function after a while
-    // static int times = 0;
-    // std::vector< std::vector< std::vector<NumericT> > >  stl_varmesh;
-    // viennacl::copy(tMesh, stl_varmesh);
-    // std::ofstream file;
-    // file.open(std::to_string(times++) + "_tVarmesh.csv");
-    // if (file.is_open())
-    // {
-    //   file << stl_varmesh[0][0][0];        
-    //   for (size_t column_i = 1; column_i < stl_varmesh[0][0].size(); column_i++)
-    //   {
-    //     file << ", "<< stl_varmesh[0][0][column_i];
-    //   }
-    //   file.close();
-    // }
 }
 
 
 template <typename NumericT>
 mesh<NumericT> RK3order(
-    const mesh<NumericT> & iMesh,
-    NumericT dt, NumericT dx, 
+    const mesh<NumericT> & iMesh, NumericT dt, NumericT dx, 
     std::function<mesh<NumericT> (const mesh<NumericT> & , NumericT, NumericT )> scheme)
 {
     std::vector< mesh<NumericT> > tMesh;
