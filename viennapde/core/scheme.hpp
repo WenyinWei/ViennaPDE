@@ -25,7 +25,7 @@
 
 #include "viennacl/linalg/matrix_operations.hpp"
 #include "viennapde/core/mesh.hpp"
-#include "viennapde/core/bmesh.hpp"
+#include "viennapde/core/meshb.hpp"
 #include "viennapde/core/convol_mesh.hpp"
 
 // SECTION 01b Declare the image class
@@ -33,26 +33,26 @@ namespace viennapde
 {
 // TODO: Change it to operator overloading
 template <typename NumericT>
-inline viennapde::Varmesh<NumericT> elem_geq0(viennapde::Varmesh<NumericT> & iVarmesh)
+inline Varmesh<NumericT> elem_geq0(const Varmesh<NumericT> & iVarmesh)
 {
-    viennapde::Varmesh<NumericT> tVarmesh{iVarmesh.get_size_num()};
-    viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(iVarmesh.get_row_num(), iVarmesh.get_column_num(), 1.0);
+    Varmesh<NumericT> tVarmesh{iVarmesh.get_size_num()};
+    viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(iVarmesh.get_row_num(), iVarmesh.get_column_num(), 0.5);
     for (size_t i = 0; i < iVarmesh.get_layer_num(); i++)
         *(tVarmesh[i]) = M_1_PI * viennacl::linalg::element_atan(*(iVarmesh[i]) * 1000.0) + scalar_mat;
     return tVarmesh;
 }
+
 namespace scheme
 {
 
 template <typename NumericT>
-void Godunov(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx)
+Varmesh<NumericT> Godunov(
+    const Varmesh<NumericT> & iVarmesh, // This func requires extend_boundary(0,1,1);
+    NumericT dt, NumericT dx)
 {
-    viennapde::BVarmesh<NumericT> tBVarmesh{iVarmesh};
-    tBVarmesh.extend_boundary(0,1,0);
-    tBVarmesh.BCPeriodic();
-    viennapde::Varmesh<NumericT> & tVarmesh = tBVarmesh;
+    // iVarmesh.check_boundary(0,1,0);
+    // iVarmesh.BCPeriodic();
+
     // Calculate the u_{j+1/2}^-, u_{j+1/2}^+
     
     // std::vector<std::vector<std::vector<NumericT>>> t_std_varmesh_l, 
@@ -99,30 +99,27 @@ void Godunov(
     
 
     // Calculate f(u^*)
-    viennapde::Varmesh<NumericT> t_vie_ustar{tVarmesh.get_size_num()};
+    Varmesh<NumericT> fustar{iVarmesh.get_size_num()};
     {
-    viennacl::matrix<NumericT> tKernel{1, 3};
-    tKernel(0, 2) = 1;
-    auto   ur = viennapde::convolve<NumericT, ConvolutionType::EQUIV>(tVarmesh, tKernel);
-    viennapde::Varmesh<NumericT> & ul = tVarmesh;
-    t_vie_ustar = (ur + (ul-ur) * elem_geq0(ul)) * ((float)1.0- ((float)1.0-elem_geq0(ul))*elem_geq0(ur) );
-    // t_vie_ustar = (ur + (ul-ur) * elem_geq0(ul+ur)) * (1- (1-elem_geq0(ul))*elem_geq0(ur) );
+    viennacl::matrix<NumericT> tKernel{1, 3}; tKernel(0, 2) = 1;
+    Varmesh<NumericT>         ur = viennapde::convolve<NumericT, ConvolutionType::EQUIV>(iVarmesh, tKernel);
+    Varmesh<NumericT> const & ul = iVarmesh;
+    Varmesh<NumericT> ustar 
+        = (ur + (ul-ur) * elem_geq0(ul+ur)) * ((NumericT)1.0- ((NumericT)1.0-elem_geq0(ul))*elem_geq0(ur) );
+    fustar = ustar * ustar / 2 ;
     }
-    viennapde::Varmesh<NumericT> t_vie_fustar{tVarmesh.get_size_num()};
-    t_vie_fustar = t_vie_ustar * t_vie_ustar / 2 ;
 
     // Calculate f_{j+1/2}(u^*) - f_{j-1/2}(u^*)
-    viennapde::Varmesh<NumericT> t_vie_fustardiff{t_vie_fustar};
-
+    Varmesh<NumericT> fustardiff{iVarmesh.get_size_num()};
     {
-    viennacl::matrix<NumericT> tKernel{1, 3};
-    tKernel(0, 0) = -1;
-    viennapde::convolve<NumericT, ConvolutionType::EQUIV>(t_vie_fustar, tKernel, t_vie_fustardiff, ClrOut::NO);
+    viennacl::matrix<NumericT> tKernel{1, 3}; tKernel(0, 0) = -1; tKernel(0, 1) = 1;
+    fustardiff = viennapde::convolve<NumericT, ConvolutionType::EQUIV>(fustar, tKernel);
     }
 
 
-    // Time Forward on tVarmesh, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
-    tVarmesh -= t_vie_fustardiff * (dt / dx);
+    // Time Forward, attention this is a temporarlly extended Varmesh to suffice the need of periodic B.C..
+    Varmesh<NumericT> oVarmesh = iVarmesh - fustardiff * (dt / dx);
+    return oVarmesh;
     // // Test Output Part Make it a function after a while
     // static int times = 0;
     // std::vector< std::vector< std::vector<NumericT> > >  stl_varmesh;
@@ -138,29 +135,24 @@ void Godunov(
     //   }
     //   file.close();
     // }
-
-    
-    { // STUB Cut down the margin.
-    viennacl::matrix<NumericT> tKernel{1, 3}; tKernel(0, 1) = 1;
-    viennapde::convolve<NumericT, ConvolutionType::INNER>(tVarmesh, tKernel, oVarmesh, ClrOut::YES);
-    }
 }
 
 
 template <typename NumericT>
-void RK3order(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    viennapde::Varmesh<NumericT> & oVarmesh, NumericT dt, NumericT dx, 
-    std::function<void (const Varmesh<NumericT> & , Varmesh<NumericT> & , NumericT, NumericT )> scheme)
+Varmesh<NumericT> RK3order(
+    const Varmesh<NumericT> & iVarmesh,
+    NumericT dt, NumericT dx, 
+    std::function<Varmesh<NumericT> (const Varmesh<NumericT> & , NumericT, NumericT )> scheme)
 {
-    std::vector<viennapde::Varmesh<NumericT>> tVarmesh;
-    for (size_t i = 0; i < 2; i++)
-        tVarmesh.push_back(viennapde::Varmesh<NumericT>{iVarmesh.get_size_num()});
-    scheme(iVarmesh, tVarmesh[0], dt, dx);
-    scheme(tVarmesh[0], tVarmesh[1], dt, dx);
+    std::vector< Varmesh<NumericT> > tVarmesh;
+    for (size_t i = 0; i < 3; i++)
+        tVarmesh.emplace_back(iVarmesh.get_size_num());
+    tVarmesh[0] = scheme(iVarmesh,    dt, dx);
+    tVarmesh[1] = scheme(tVarmesh[0], dt, dx);
     tVarmesh[1] = iVarmesh * (3/4) + tVarmesh[1] * (1/4);
-    scheme(tVarmesh[1], oVarmesh, dt, dx);
-    oVarmesh = iVarmesh * (1/3) + oVarmesh * (2/3);
+    tVarmesh[2] = scheme(tVarmesh[1], dt, dx);
+    tVarmesh[2] = iVarmesh * (1/3) + tVarmesh[2] * (2/3);
+    return tVarmesh[2];
 }
 
 } //namespace viennapde::scheme

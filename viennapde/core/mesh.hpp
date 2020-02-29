@@ -44,6 +44,7 @@
 namespace viennapde
 {
     template <typename NumericT> class Varmesh;
+    template <typename NumericT> class meshb;
     using GridIntT = ssize_t;
     enum ClrOut : bool { YES=true, NO=false };
 } //namespace viennapde
@@ -66,7 +67,7 @@ void copy(  const std::vector<std::vector<std::vector<NumericT>>> & iVarmeshSTL,
 {   
     oVarmesh.resize_ptr(iVarmeshSTL.size());
     for (size_t layer_i = 0; layer_i < iVarmeshSTL.size(); layer_i++)
-    {   oVarmesh.at(layer_i)->resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
+    {   oVarmesh[layer_i]->resize(iVarmeshSTL[0].size(), iVarmeshSTL[0][0].size());
         viennacl::copy(iVarmeshSTL[layer_i], *(oVarmesh[layer_i]));
     }
 }
@@ -104,6 +105,7 @@ using DequeMat = std::deque<std::shared_ptr<viennacl::matrix<NumericT>>>;
 template <typename NumericT>
 class Varmesh : public DequeMat<NumericT>
 {
+    friend class meshb<NumericT>;
 public:
     cord3<size_t> get_size_num() const { return cord3(get_row_num(), get_column_num(), this->size() ); };
     size_t get_row_num()    const { return this->empty() ? 0 : this->at(0)->size1();};

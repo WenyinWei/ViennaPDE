@@ -1,3 +1,5 @@
+file(MAKE_DIRECTORY ../../../data/scheme/Godunov)
+
 foreach(exec mesh scheme convol_mat convol_mesh) # mesh bmesh convol_mat convol_mesh scheme 
   add_executable(${exec} ${exec}.cpp)
   # 设置 ViennaCL library 用的是 OpenCL 后端，你还可以设置它为 CUDA 或者 OpenMP
