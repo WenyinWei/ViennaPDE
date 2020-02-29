@@ -17,10 +17,7 @@
 
 /** @file test/viennapde/core/convol_mesh.cpp
     @brief TEST: Convolve operation on mesh class. All functions in this file are overloaded of viennapde::convolve working on the mesh class. 
-    TODO Not yet and verified.
 */
-
-
 
 #include <cmath>
 #include <vector>
