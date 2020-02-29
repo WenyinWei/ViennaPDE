@@ -17,7 +17,7 @@
 ============================================================================= */
 
 /** @file viennapde/core/meshb.hpp
-    @brief Varmesh with margin.
+    @brief mesh with margin.
 */
 
 #include "viennapde/core/mesh.hpp"
@@ -25,7 +25,7 @@
 
 
 
-// SECTION 01 Define the variable mesh (Varmesh) class
+// SECTION 01 Define the variable mesh (mesh) class
 namespace viennapde
 {
 
@@ -40,14 +40,14 @@ template <typename NumericT>
 class meshb 
 {
 private: 
-    viennapde::Varmesh<NumericT> & mesh_ref_; 
+    viennapde::mesh<NumericT> & mesh_ref_; 
     cord3<size_t> margin_;
     // cord3<BoundaryCondition> BC_;
     // std::weak_ptr<meshb> x_neg, x_pos, y_neg, y_pos, z_neg, z_pos;
 public:
 
-    meshb(Varmesh<NumericT> & iVarmesh): mesh_ref_{iVarmesh}, margin_{0,0,0} {}; //@brief CTOR
-    // explicit meshb(cord3<size_t> size_cord3): Varmesh(size_cord3.x, size_cord3.y, size_cord3.z), margin_{0,0,0} {};
+    meshb(mesh<NumericT> & iMesh): mesh_ref_{iMesh}, margin_{0,0,0} {}; //@brief CTOR
+    // explicit meshb(cord3<size_t> size_cord3): mesh(size_cord3.x, size_cord3.y, size_cord3.z), margin_{0,0,0} {};
     // ~meshb() {}; // @ DTOR
 
     cord3<size_t> get_margin() {return cord3(get_marginx(), get_marginy(), get_marginz());}

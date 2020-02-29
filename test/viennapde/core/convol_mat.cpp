@@ -56,7 +56,7 @@ TEST(Convol, MatonMat_INNER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
@@ -117,7 +117,7 @@ TEST(Convol, MatonMat_OUTER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
@@ -175,7 +175,7 @@ TEST(Convol, MatonMat_EQUIV)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);

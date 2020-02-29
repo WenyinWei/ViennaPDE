@@ -43,22 +43,22 @@ TEST(Scheme, Godunov)
   vcl_ScalarT dx = 2* M_PI / column_num;
   vcl_ScalarT dt = 0.02;
 
-  stl_MeshT stl_varmesh{layer_num}, stl_varmesh_after;
+  stl_MeshT stl_mesh{layer_num}, stl_varmesh_after;
 
   for (size_t layer_i=0; layer_i< layer_num; layer_i++) {
-    stl_varmesh[layer_i].resize(row_num);
+    stl_mesh[layer_i].resize(row_num);
     for (size_t row_i=0; row_i < row_num; row_i++) {
-      stl_varmesh[layer_i][row_i].resize(column_num);
+      stl_mesh[layer_i][row_i].resize(column_num);
       for (size_t column_i= 0; column_i < column_num; column_i++) {
-        stl_varmesh[layer_i][row_i][column_i] =  2.0/3 + std::sin(column_i*dx)*1/3;
+        stl_mesh[layer_i][row_i][column_i] =  2.0/3 + std::sin(column_i*dx)*1/3;
       }
     }
   }
 
-  viennapde::Varmesh<vcl_ScalarT>  vcl_varmesh{row_num, column_num, layer_num};
-  viennacl::copy(stl_varmesh, vcl_varmesh);
+  viennapde::mesh<vcl_ScalarT>  vcl_mesh{row_num, column_num, layer_num};
+  viennacl::copy(stl_mesh, vcl_mesh);
 
-  viennapde::meshb mb(vcl_varmesh);
+  viennapde::meshb mb(vcl_mesh);
   mb.extend(0, 1, 0);
   mb.refreshBC();
   
@@ -68,19 +68,19 @@ TEST(Scheme, Godunov)
   for (size_t i = 0; i * dt < TotalTime; i++)
   {
     mb.refreshBC();
-    viennacl::copy(vcl_varmesh, stl_varmesh);
+    viennacl::copy(vcl_mesh, stl_mesh);
     file.open(data_folder + std::to_string(i) + ".csv");
     if (file.is_open())
     {
-      file << stl_varmesh[0][0][by];
-      for (size_t column_i = by+1; column_i < stl_varmesh[0][0].size()-by; column_i++)
-        file << ", "<< stl_varmesh[0][0][column_i];
+      file << stl_mesh[0][0][by];
+      for (size_t column_i = by+1; column_i < stl_mesh[0][0].size()-by; column_i++)
+        file << ", "<< stl_mesh[0][0][column_i];
       file.close();
     } else { std::cerr << "Fail to open files to store data.\n"; };
-    vcl_varmesh = viennapde::scheme::Godunov(vcl_varmesh, dt, dx);
-    // vcl_varmesh = viennapde::scheme::RK3order(vcl_varmesh, dt, dx,
+    vcl_mesh = viennapde::scheme::Godunov(vcl_mesh, dt, dx);
+    // vcl_mesh = viennapde::scheme::RK3order(vcl_mesh, dt, dx,
                                                 // viennapde::scheme::Godunov<vcl_ScalarT>);
   }
 
-//   EXPECT_MESH_EQ(stl_varmesh, stl_varmesh_after, "Values diff after copying");
+//   EXPECT_MESH_EQ(stl_mesh, stl_varmesh_after, "Values diff after copying");
 }

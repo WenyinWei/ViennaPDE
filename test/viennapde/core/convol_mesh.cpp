@@ -16,7 +16,7 @@
 ============================================================================= */
 
 /** @file test/viennapde/core/convol_mesh.cpp
-    @brief TEST: Convolve operation on Varmesh class. All functions in this file are overloaded of viennapde::convolve working on the Varmesh class. 
+    @brief TEST: Convolve operation on mesh class. All functions in this file are overloaded of viennapde::convolve working on the mesh class. 
     TODO Not yet and verified.
 */
 
@@ -61,7 +61,7 @@ TEST(Convol, MatonMesh_INNER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
@@ -120,7 +120,7 @@ TEST(Convol, MatonMesh_OUTER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
@@ -179,7 +179,7 @@ TEST(Convol, MatonMesh_EQUIV)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
@@ -239,12 +239,12 @@ TEST(Convol, MeshonMesh_OUTER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
   
-  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  std::vector<viennapde::mesh<vcl_ScalarT>> vcl_ker_vec;
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
   for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
@@ -300,12 +300,12 @@ TEST(Convol, MeshonMesh_EQUIV)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
   
-  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  std::vector<viennapde::mesh<vcl_ScalarT>> vcl_ker_vec;
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
   for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)
@@ -361,12 +361,12 @@ TEST(Convol, MeshonMesh_INNER)
   
 
   // SECTION 02 COPY interface with other classes
-  std::vector< viennapde::Varmesh<vcl_ScalarT>> vcl_mesh_vec;
+  std::vector< viennapde::mesh<vcl_ScalarT>> vcl_mesh_vec;
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   vcl_mesh_vec.emplace_back(stl_mesh[0].size(), stl_mesh[0][0].size(), stl_mesh.size());
   viennacl::copy(stl_mesh, vcl_mesh_vec[0]);
   
-  std::vector<viennapde::Varmesh<vcl_ScalarT>> vcl_ker_vec;
+  std::vector<viennapde::mesh<vcl_ScalarT>> vcl_ker_vec;
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[0]
   vcl_ker_vec.emplace_back(kernel_size1, kernel_size2, kernel_size3); // vcl_ker_vec[1]
   for (size_t layer_i = 0; layer_i < kernel_size3; layer_i++)

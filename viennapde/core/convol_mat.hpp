@@ -80,10 +80,10 @@ cord2<size_t> ConvolOMatSize(
 
 template < typename NumericT, viennapde::ConvolutionType convolT >
 cord3<size_t> ConvolOMeshSize(
-    const viennapde::Varmesh<NumericT> & iVarmesh,
-    const viennapde::Varmesh<NumericT> & iKernel)
+    const viennapde::mesh<NumericT> & iMesh,
+    const viennapde::mesh<NumericT> & iKernel)
 {
-    const cord2<size_t> xySize= ConvolOMatSize<NumericT, convolT>(*iVarmesh[0], *iKernel[0]);
+    const cord2<size_t> xySize= ConvolOMatSize<NumericT, convolT>(*iMesh[0], *iKernel[0]);
     assert( iKernel.size() % 2 == 1 );
     const size_t MeshSize3 = iKernel.size(),
                    iKernelHalf3 = (MeshSize3-1)/2;
@@ -105,7 +105,7 @@ cord3<size_t> ConvolOMeshSize(
 }
 
 // SECTION 03_002a Vermesh Convolution
-/** @brief Convolve the Varmesh data by the 2D matrix kernel, which would be the base of Varmesh shift and filter
+/** @brief Convolve the mesh data by the 2D matrix kernel, which would be the base of mesh shift and filter
  * @param  {viennacl::matrix<NumericT>} iKernel    : 
  * @param  {std::vector<std::pair<size_t} undefined : 
  * @param  {size_t>>} ROIxy_vec                     : 
@@ -143,7 +143,7 @@ void convolve(
 
     
     
-    // STUB 02 Multiply the scalar and contribute to the final Varmesh.
+    // STUB 02 Multiply the scalar and contribute to the final mesh.
     if (clrOut) {oMatrix.clear();}
 
     for(auto & iter: ROIrc_vec)
