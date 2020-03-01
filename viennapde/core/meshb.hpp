@@ -45,8 +45,29 @@ private:
     // cord3<BoundaryCondition> BC_;
     // std::weak_ptr<meshb> x_neg, x_pos, y_neg, y_pos, z_neg, z_pos;
 public:
-    meshb(mesh<NumericT> & iMesh): mesh_ref_{iMesh}, margin_{0,0,0} {iMesh.bdry_ptr_ = this;}; //@brief CTOR
-    ~meshb() {mesh_ref_.bdry_ptr_ = nullptr;}; // @ DTOR
+    meshb(mesh<NumericT> & iMesh): mesh_ref_{iMesh}, margin_{0,0,0} {iMesh.bdry_ptr_ = this;}; // @brief CTOR
+    ~meshb() {
+        mesh_ref_.bdry_ptr_ = nullptr;
+        
+        for (size_t i = 0; i < margin_.z; i++)
+        {
+            mesh_ref_.pop_front();
+            mesh_ref_.pop_back();
+        }
+
+        const size_t bx = margin_.x,
+                     by = margin_.y;
+        const size_t Nx = mesh_ref_.get_row_num(),
+                     Ny = mesh_ref_.get_column_num();
+        for (size_t i = 0; i < mesh_ref_.get_layer_num(); i++)
+        {              
+            auto matrix_new = new viennacl::matrix<NumericT>(Nx-2*bx, Ny-2*by);
+            viennacl::matrix_range<viennacl::matrix<NumericT>>  
+                submatrix_from(*(mesh_ref_[i]), viennacl::range{bx, Nx-bx}, viennacl::range{by, Ny-by}); 
+            submatrix_from = *(mesh_ref_[i]) ; // Value transfered to new matrix
+            mesh_ref_[i].reset(matrix_new); // Shared ptr reset to the new matrix
+        }
+    }; // @ DTOR
 
     cord3<size_t> get_margin() {return cord3(get_marginx(), get_marginy(), get_marginz());}
     size_t get_marginx() {return margin_.x;}

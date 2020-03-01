@@ -82,8 +82,7 @@ mesh<NumericT> Godunov(const mesh<NumericT> & iMesh, NumericT dt, NumericT dx)
 
 
 template <typename NumericT>
-mesh<NumericT> RK3order(
-    const mesh<NumericT> & iMesh, NumericT dt, NumericT dx, 
+mesh<NumericT> RK3order(const mesh<NumericT> & iMesh, NumericT dt, NumericT dx, 
     std::function<mesh<NumericT> (const mesh<NumericT> & , NumericT, NumericT )> scheme)
 {
     std::vector< mesh<NumericT> > tMesh;
@@ -91,9 +90,9 @@ mesh<NumericT> RK3order(
         tMesh.emplace_back(iMesh.get_size_num());
     tMesh[0] = scheme(iMesh,    dt, dx);
     tMesh[1] = scheme(tMesh[0], dt, dx);
-    tMesh[1] = iMesh * (3/4) + tMesh[1] * (1/4);
+    tMesh[1] = iMesh * (3.0/4) + tMesh[1] * (1.0/4);
     tMesh[2] = scheme(tMesh[1], dt, dx);
-    tMesh[2] = iMesh * (1/3) + tMesh[2] * (2/3);
+    tMesh[2] = iMesh * (1.0/3) + tMesh[2] * (2.0/3);
     return tMesh[2];
 }
 

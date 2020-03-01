@@ -167,11 +167,12 @@ public:
     mesh<NumericT>& operator= (mesh<NumericT> & iMesh) = delete; // Only allow copy constructor to work for copying
     /** @brief Move Assignment */
     mesh<NumericT>& operator= (mesh<NumericT> && iMesh) {
-        this->resize(this->get_layer_num());
+        this->resize_ptr(get_layer_num(), get_row_num(), get_column_num());
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
+        {
             this->at(i) = iMesh[i];
-        iMesh.resize(0);
-        iMesh.shrink_to_fit();
+            iMesh[i].reset();
+        }
         return *this; 
     };
     mesh<NumericT>& operator+= (const mesh<NumericT> & iMesh) {
