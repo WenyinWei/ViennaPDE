@@ -26,8 +26,10 @@
 
 #include "gtest/gtest.h"
 
-#include "viennapde/core/scheme.hpp"
-
+#include "viennapde/scheme/pde/Godunov.hpp"
+#include "viennapde/scheme/pde/LaxWendroff.hpp"
+#include "viennapde/scheme/pde/WENO.hpp"
+#include "viennapde/scheme/ode/RK3order.hpp"
 
 typedef float                         vcl_ScalarT;
 typedef viennacl::vector<vcl_ScalarT> vcl_VectorT;
@@ -88,7 +90,6 @@ TEST_F(Scheme1D, Warmup)
 {                                       
   mb.extend(0, 1, 0);
   data_path = DATAPATH_SCHEME1D_WARMUP ;
-
   scheme = viennapde::scheme::Godunov<vcl_ScalarT>;
 } 
 
@@ -96,16 +97,13 @@ TEST_F(Scheme1D, Godunov)
 {                                       
   mb.extend(0, 1, 0);
   data_path = DATAPATH_SCHEME1D_GODUNOV ;
-
   scheme = viennapde::scheme::Godunov<vcl_ScalarT>;
 } 
 
 TEST_F(Scheme1D, Godunov_RK3order)     
 {                                       
   mb.extend(0, 3, 0);
-  
   data_path = DATAPATH_SCHEME1D_GODUNOV_RK3ORDER ;
-  
   using namespace std::placeholders;  // for _1, _2, _3...
   scheme = std::bind(viennapde::scheme::RK3order<vcl_ScalarT>, _1, _2, _3, viennapde::scheme::Godunov<vcl_ScalarT>);
 } 
@@ -114,15 +112,13 @@ TEST_F(Scheme1D, LaxWendroff)
 {                                       
   mb.extend(0, 2, 0);
   data_path = DATAPATH_SCHEME1D_LAXWENDROFF ;
-
   scheme = viennapde::scheme::LaxWendroff<vcl_ScalarT>;
 } 
 
-TEST_F(Scheme1D, WENO_LaxFriedrichs)     
+TEST_F(Scheme1D, WENO_TVDlimiter_LaxFriedrichs)     
 {                                       
   mb.extend(0, 3, 0);
-  data_path = DATAPATH_SCHEME1D_WENO_LAXFRIEDRICHS ;
-
-  scheme = viennapde::scheme::WENO<vcl_ScalarT, viennapde::FluxType::LaxFriedrichs>;
+  data_path = DATAPATH_SCHEME1D_WENO_TVDLIMITER_LAXFRIEDRICHS ;
+  scheme = viennapde::scheme::WENO<vcl_ScalarT, viennapde::scheme::FluxType::LaxFriedrichs_flux>;
 } 
 
