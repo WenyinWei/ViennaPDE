@@ -105,6 +105,7 @@ using DequeMat = std::deque<std::shared_ptr<viennacl::matrix<NumericT>>>;
 template <typename NumericT>
 class mesh : public DequeMat<NumericT>
 {
+public:
     friend class meshb<NumericT>;
     meshb<NumericT>* bdry_ptr_ = nullptr;
 public:
@@ -125,7 +126,7 @@ public:
     explicit mesh(size_t row_num, size_t column_num, size_t layer_num): 
         DequeMat<NumericT> {layer_num}
         {
-            for (GridIntT layer_i = 0; layer_i < layer_num; layer_i++)
+            for (size_t layer_i = 0; layer_i < layer_num; layer_i++)
                 this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>(row_num, column_num);
         };
     /** @brief Constructor <- VarmeshSTL
@@ -134,14 +135,14 @@ public:
     explicit mesh(const std::vector<std::vector<std::vector<NumericT>>> & iMeshSTL): 
         mesh(iMeshSTL[0].size(), iMeshSTL[0][0].size(), iMeshSTL.size())
         {   
-            for (GridIntT layer_i = 0; layer_i < iMeshSTL.size(); layer_i++)
+            for (size_t layer_i = 0; layer_i < iMeshSTL.size(); layer_i++)
                 viennacl::copy(iMeshSTL[layer_i], *(this->at(layer_i)));
         };
     /** @brief Copy Constructor */
     mesh(const mesh<NumericT> & iMesh):
         DequeMat<NumericT> {iMesh.size()}
         {   
-            for (GridIntT layer_i = 0; layer_i < iMesh.size(); layer_i++)
+            for (size_t layer_i = 0; layer_i < iMesh.size(); layer_i++)
             {
                 this->at(layer_i) = std::make_shared<viennacl::matrix<NumericT>>();
                 *(this->at(layer_i)) = *(iMesh[layer_i]);

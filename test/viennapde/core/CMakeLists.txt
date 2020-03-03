@@ -1,4 +1,5 @@
-file(MAKE_DIRECTORY ../../../data/scheme/Godunov)
+
+
 
 foreach(exec mesh scheme convol_mat convol_mesh) # mesh bmesh convol_mat convol_mesh scheme 
   add_executable(${exec} ${exec}.cpp)
@@ -13,3 +14,11 @@ foreach(exec mesh scheme convol_mat convol_mesh) # mesh bmesh convol_mat convol_
   gtest_discover_tests(${exec})
 endforeach()
 
+foreach(scheme Warmup Godunov LaxWendroff TVDlimiter_LaxFriedrichs WENO_LaxFriedrichs Godunov_RK3order)
+  string(TOUPPER ${scheme} SCHEME)
+  set(DATAPATH_SCHEME1D_${SCHEME} data/scheme/${scheme}/)
+  file(MAKE_DIRECTORY ../../../${DATAPATH_SCHEME1D_${SCHEME}})
+  target_compile_definitions(scheme PRIVATE
+  DATAPATH_SCHEME1D_${SCHEME}="${DATAPATH_SCHEME1D_${SCHEME}}"
+  )
+endforeach(scheme Warmup Godunov LaxWendroff TVDlimiter_LaxFriedrichs WENO_LaxFriedrichs Godunov_RK3order)
