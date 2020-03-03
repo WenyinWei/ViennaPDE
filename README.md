@@ -1,11 +1,11 @@
 ## ViennaPDE
-ViennaPDE is written by Wenyin during his study of PDE at Tsinghua University. The project has heavy reliance on the ViennaCL library.
+ViennaPDE is written by Wenyin during his study of PDE at Tsinghua University. The project has heavy reliance on the ViennaCL library. The code now is capable to calculate the 1D simulation rapidly. For 2D or 3D application, development is in progress. Please contact Wenyin if you have any extention for the concrete application.  
 
 
 # Compile
 It is compiled with a NVIDIA CUDA driver and powered by ViennaCL openCL library, otherwise the user may need to configure the cmake command to use other backend (CUDA or openMP).
 
-The command needs to be edited for the above purpose is located at `/home/ununtu/~/ViennaPDE/test/viennapde/core/CMakeLists.txt `
+The command needs to be edited for the above purpose is located at `ViennaPDE/test/viennapde/core/CMakeLists.txt `
 ```
 set_target_properties(${exec} PROPERTIES COMPILE_FLAGS "-DVIENNACL_WITH_OPENCL") # Guide Viennacl to use opencl mode.
 ```
