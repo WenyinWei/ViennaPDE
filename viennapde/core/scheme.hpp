@@ -155,7 +155,7 @@ mesh<NumericT> LaxWendroff(const mesh<NumericT> & iMesh, NumericT dt, NumericT d
     * = 1/2 [f(u_j) + f(u_{j+1})] - dt/2dx f'((u_j+u_{j+1})/2)[f(u_{j+1})-f(u_j)] 
     * Here, due to FVM, u_{j} and u_{j+1} are taken by average value \bar{u}_j and \bar{u}_{j+1}.
     */
-    hatf = (u_neg*u_neg + u_pos*u_pos)/(NumericT)4.0 - (NumericT)(dt/dx/2 * 0.5 * 0.5) * (u_neg + u_pos) * (u_pos*u_pos - u_neg*u_neg);
+    hatf = ((u_neg^2) + (u_pos^2))/4.0 - (dt/dx/2 * 0.5 * 0.5) * (u_neg + u_pos) * ((u_pos^2) - (u_neg^2));
     }
 
     // Calculate \hat{f}_{j+1/2} - \hat{f}_{j-1/2}
@@ -234,17 +234,17 @@ mesh<NumericT> WENO_g(const mesh<NumericT> & iMesh)
     auto beta0_1 = convolve(iMesh, betaKer01, tROIrc_vec0); auto beta0_2 = convolve(iMesh, betaKer02, tROIrc_vec0);
     auto beta1_1 = convolve(iMesh, betaKer11, tROIrc_vec1); auto beta1_2 = convolve(iMesh, betaKer12, tROIrc_vec3);
     auto beta2_1 = convolve(iMesh, betaKer21, tROIrc_vec2); auto beta2_2 = convolve(iMesh, betaKer22, tROIrc_vec2);
-    auto beta0 = (NumericT)(13.0/12) * beta0_1 * beta0_1 + (NumericT)(1.0/4) * beta0_2 * beta0_2;
-    auto beta1 = (NumericT)(13.0/12) * beta1_1 * beta1_1 + (NumericT)(1.0/4) * beta1_2 * beta1_2;
-    auto beta2 = (NumericT)(13.0/12) * beta2_1 * beta2_1 + (NumericT)(1.0/4) * beta2_2 * beta2_2;
+    auto beta0 = (NumericT)(13.0/12) * (beta0_1^2) + (NumericT)(1.0/4) * (beta0_2^2);
+    auto beta1 = (NumericT)(13.0/12) * (beta1_1^2) + (NumericT)(1.0/4) * (beta1_2^2);
+    auto beta2 = (NumericT)(13.0/12) * (beta2_1^2) + (NumericT)(1.0/4) * (beta2_2^2);
     static const NumericT 
         gamma_0 = pos ? 3.0/10 : 1.0/10, 
         gamma_1 = 3.0/5, 
         gamma_2 = pos ? 1.0/10 : 3.0/10,
         epsilon = 1.0e-6;
-    auto tilde_w_0 =  gamma_0 / ((beta0+epsilon)*(beta0+epsilon)); 
-    auto tilde_w_1 =  gamma_1 / ((beta1+epsilon)*(beta1+epsilon)); 
-    auto tilde_w_2 =  gamma_2 / ((beta2+epsilon)*(beta2+epsilon)); 
+    auto tilde_w_0 =  gamma_0 / ((beta0+epsilon)^2); 
+    auto tilde_w_1 =  gamma_1 / ((beta1+epsilon)^2); 
+    auto tilde_w_2 =  gamma_2 / ((beta2+epsilon)^2); 
     {
         auto sum_tilde_w= tilde_w_0 + tilde_w_1 + tilde_w_2;
         tilde_w_0 /= sum_tilde_w; // Now \tilde{w}_0 => w_0 

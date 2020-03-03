@@ -197,13 +197,13 @@ public:
         return *this;
     }
     mesh<NumericT>& operator+= (const char & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += scalar_mat;
         return *this;
     }
     mesh<NumericT>& operator-= (const char & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) -= scalar_mat;
         return *this;
@@ -219,13 +219,13 @@ public:
         return *this;
     }
     mesh<NumericT>& operator+= (const short & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += scalar_mat;
         return *this;
     }
     mesh<NumericT>& operator-= (const short & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) -= scalar_mat;
         return *this;
@@ -241,13 +241,13 @@ public:
         return *this;
     }
     mesh<NumericT>& operator+= (const int & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += scalar_mat;
         return *this;
     }
     mesh<NumericT>& operator-= (const int & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) -= scalar_mat;
         return *this;
@@ -263,13 +263,13 @@ public:
         return *this;
     }
     mesh<NumericT>& operator+= (const float & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += scalar_mat;
         return *this;
     }
     mesh<NumericT>& operator-= (const float & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) -= scalar_mat;
         return *this;
@@ -285,13 +285,13 @@ public:
         return *this;
     }
     mesh<NumericT>& operator+= (const double & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) += scalar_mat;
         return *this;
     }
     mesh<NumericT>& operator-= (const double & iNum) {
-        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), iNum);
+        viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(this->get_row_num(), this->get_column_num(), (NumericT)iNum);
         for (GridIntT i = 0; i < this->get_layer_num(); i++)
             *(this->at(i)) -= scalar_mat;
         return *this;
@@ -383,46 +383,55 @@ inline mesh<NumericT> operator/ (mesh<NumericT> lhs, const mesh<NumericT> & rhs)
     lhs /= rhs;
     return lhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator+ (mesh<NumericT_l> lhs, NumericT_r rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator+ (mesh<NumericT> lhs, OtherNumericT rhs) {
     lhs += rhs;
     return lhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator- (mesh<NumericT_l> lhs, NumericT_r rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator- (mesh<NumericT> lhs, OtherNumericT rhs) {
     lhs -= rhs;
     return lhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator* (mesh<NumericT_l> lhs, NumericT_r rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator* (mesh<NumericT> lhs, OtherNumericT rhs) {
     lhs *= rhs;
     return lhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator/ (mesh<NumericT_l> lhs, NumericT_r rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator/ (mesh<NumericT> lhs, OtherNumericT rhs) {
     lhs /= rhs;
     return lhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator+ (NumericT_l lhs, mesh<NumericT_r> rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator+ (OtherNumericT lhs, mesh<NumericT> rhs) {
     rhs += lhs;
     return rhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator- (NumericT_l lhs, mesh<NumericT_r> rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator- (OtherNumericT lhs, mesh<NumericT> rhs) {
     rhs -= lhs;
     return rhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator* (NumericT_l lhs, mesh<NumericT_r> rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator* (OtherNumericT lhs, mesh<NumericT> rhs) {
     rhs *= lhs;
     return rhs;
 }
-template <typename NumericT_l, typename NumericT_r>
-inline mesh<NumericT_l> operator/ (NumericT_l lhs, mesh<NumericT_r> rhs) {
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator/ (OtherNumericT lhs, mesh<NumericT> rhs) {
     rhs /= lhs;
     return rhs;
 }
+template <typename NumericT, typename OtherNumericT>
+inline mesh<NumericT> operator^(mesh<NumericT> lhs, const OtherNumericT rhs) {
+    viennacl::matrix<NumericT> scalar_mat = viennacl::scalar_matrix<NumericT>(lhs.get_row_num(), lhs.get_column_num(), (NumericT)rhs);
+    for (GridIntT i = 0; i < lhs.get_layer_num(); i++)
+        *(lhs[i]) = viennacl::linalg::element_pow(*(lhs[i]), scalar_mat);
+    return lhs;
+}
+
+
 } //namespace viennapde
 
 
