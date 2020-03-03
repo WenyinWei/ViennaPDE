@@ -1,41 +1,33 @@
-# Executable
-Now the executable is put at 
-/PDE/build/src/pde_test,
-which is a monotone Godunov scheme to solve the Burger's equation with i.c. as 1/3+2/3 sin(x).
+## ViennaPDE
+ViennaPDE is written by Wenyin during his study of PDE at Tsinghua University. The project has heavy reliance on the ViennaCL library.
+
 
 # Compile
-It is compiled with a NVIDIA CUDA driver and powered by ViennaCL openCL library, so I am afraid that on other machines users may need to reconfigure and rebuild for his/her system.
-## CPP
-One may be able to change the parameters he want to change at /PDE/src/pde_test.cpp
+It is compiled with a NVIDIA CUDA driver and powered by ViennaCL openCL library, otherwise the user may need to configure the cmake command to use other backend (CUDA or openMP).
 
-## ViennaPDE
-If Prof. Yu or Prof. Du wants to check the concrete scheme steps, they are put at the hpp files which compose the ViennaPDE library. ViennaPDE is written by Wenyin during his study of PDE at Tsinghua University based on the ViennaCL library.
+The command needs to be edited for the above purpose is located at `/home/ununtu/~/ViennaPDE/test/viennapde/core/CMakeLists.txt `
+```
+set_target_properties(${exec} PROPERTIES COMPILE_FLAGS "-DVIENNACL_WITH_OPENCL") # Guide Viennacl to use opencl mode.
+```
 
-## Analyze
-The following is the python script to analyze the result.
+ViennaCL is very easy to install, because it is just a hpp-only library and ViennaPDE is the same. To install ViennaCL in your system, as long as you can include its hpp file when needed.
 
-%matplotlib inline
-import matplotlib.pyplot as plt
-import csv
+# Test
+Google test mechanism is adopted in our project and it is recommended that users offer your typical tests.
 
-x=[]
-y=[]
-n=0
-dx=0.1
+The install the GTest library, the user may need to download the GTest src zip from github and unzip it, e.g., https://github.com/google/googletest/releases/tag/release-1.10.0.
 
-with open('30.csv', 'r') as csvfile:
-    [plots]= csv.reader(csvfile, delimiter=',')
-    for pointdata in plots:
-        n = n + 1
-        x.append(n*dx)
-        y.append(float(pointdata))
+Following the steps: 
 
+```
+mkdir build && cd build
+cmake .. 
+sudo make install
+```  
 
-plt.plot(x,y, marker='o')
+, after which the gtest would be installed in your linux system.
 
-plt.title('Data from the CSV File: Burger Equation ')
+For other system that you are concerned, please search relevant online materials to install it. 
 
-plt.xlabel('Number of People')
-plt.ylabel('Expenses')
-
-plt.show()
+# Analyze
+The ipython code `test/plot_test_data.ipynb` is the python script to analyze the computed result of Burger's equation.
