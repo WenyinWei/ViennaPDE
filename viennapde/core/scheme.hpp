@@ -128,6 +128,26 @@ mesh<NumericT> Godunov(const mesh<NumericT> & iMesh, NumericT dt, NumericT dx)
     return iMesh - hatfdiff * (dt / dx);
 }
 
+// TODO  Make it generic for various function 
+template <typename NumericT, FluxType fluxT>
+inline mesh<NumericT> FluxFunction(const mesh<NumericT> & u_neg, const mesh<NumericT> & u_pos, NumericT dt=0, NumericT dx=0)
+{
+    if constexpr (fluxT == FluxType::LaxFriedrichs) {
+        /* LaxFriedrichs Flux function 
+        * \hat{f}_{j+1/2} = \hat{f}(u_{j}, u_{j+1}) 
+        * = 1/2 [f(u_j) + f(u_{j+1}) - \alpha (u_{j+1}-u_j)], where \alpha = \max_u |f'(u)|, in the Burger's equation, \alpha = \max(u_j,u_{j+1})
+        */
+        return (u_neg*u_neg + u_pos*u_pos)/(NumericT)4.0 - elem_max(elem_abs(u_neg), elem_abs(u_pos)) * (u_pos-u_neg);
+    } else if constexpr (fluxT == FluxType::LaxWendroff) {
+        /* LaxWendroff Flux function 
+        * \hat{f}_{j+1/2} = \hat{f}(u_{j}, u_{j+1}) 
+        * = 1/2 [f(u_j) + f(u_{j+1})] - dt/2dx f'((u_j+u_{j+1})/2)[f(u_{j+1})-f(u_j)] 
+        * Here, due to FVM, u_{j} and u_{j+1} are taken by average value \bar{u}_j and \bar{u}_{j+1}.
+        */
+        return ((u_neg^2) + (u_pos^2))/4.0 - (dt/dx/2 * 0.5 * 0.5) * (u_neg + u_pos) * ((u_pos^2) - (u_neg^2));
+    }
+}
+
 template <typename NumericT>
 /**
  * @brief Impose 1D scheme LaxWendroff + finite volume on the Burger's equation. Requires (0, 2, 0) or more boundary.
@@ -150,12 +170,7 @@ mesh<NumericT> LaxWendroff(const mesh<NumericT> & iMesh, NumericT dt, NumericT d
     // u_{j+1/2}^+ =  1/6 * \bar{u}_{j}   + 5/6 * \bar{u}_{j+1} - 1/6 * \bar{u}_{j+2}
     mesh<NumericT> u_pos = convolve(iMesh, tKernel2, tROIrc_vec2);
     
-    /* LaxWendroff Flux function 
-    * \hat{f}_{j+1/2} = \hat{f}(u_{j}, u_{j+1}) 
-    * = 1/2 [f(u_j) + f(u_{j+1})] - dt/2dx f'((u_j+u_{j+1})/2)[f(u_{j+1})-f(u_j)] 
-    * Here, due to FVM, u_{j} and u_{j+1} are taken by average value \bar{u}_j and \bar{u}_{j+1}.
-    */
-    hatf = ((u_neg^2) + (u_pos^2))/4.0 - (dt/dx/2 * 0.5 * 0.5) * (u_neg + u_pos) * ((u_pos^2) - (u_neg^2));
+    hatf = FluxFunction<NumericT, FluxType::LaxWendroff>(u_neg, u_pos);
     }
 
     // Calculate \hat{f}_{j+1/2} - \hat{f}_{j-1/2}
@@ -170,22 +185,37 @@ mesh<NumericT> LaxWendroff(const mesh<NumericT> & iMesh, NumericT dt, NumericT d
 }
 
 
-// TODO  Make it generic for various function 
-template <typename NumericT, FluxType fluxT>
-inline mesh<NumericT> FluxFunction(const mesh<NumericT> & u_neg, const mesh<NumericT> & u_pos)
-{
-    /* LaxFriedrichs Flux function 
-    * \hat{f}_{j+1/2} = \hat{f}(u_{j}, u_{j+1}) 
-    * = 1/2 [f(u_j) + f(u_{j+1}) - \alpha (u_{j+1}-u_j)], where \alpha = \max_u |f'(u)|, in the Burger's equation, \alpha = \max(u_j,u_{j+1})
-    */
-    return (u_neg*u_neg + u_pos*u_pos)/(NumericT)4.0 - elem_max(elem_abs(u_neg), elem_abs(u_pos)) * (u_pos-u_neg);
-}
 
 enum EdgeFaceOrien : bool { POS=true, NEG=false };
+
 template <typename NumericT, EdgeFaceOrien pos>
+/** @brief Finite Volumn 3 order estimation of the cell edge value.
+ * 
+ * @param  {const mesh<NumericT> &} iMesh : 
+ * @return {mesh<NumericT>}               : 
+ */
+mesh<NumericT> FV_EdgeEstimate(const mesh<NumericT> & iMesh)
+{
+    viennacl::matrix<NumericT> tKernel1{1, 5}; tKernel1(0,1)=-1.0/6; tKernel1(0,2)=5.0/6; tKernel1(0,3) = 1.0/3;
+    viennacl::matrix<NumericT> tKernel2{1, 5}; tKernel2(0,2)= 1.0/3; tKernel2(0,3)=5.0/6; tKernel2(0,4) =-1.0/6;
+    std::vector<cord2<GridIntT>> tROIrc_vec1{{0,1},{0,2},{0,3}}, tROIrc_vec2{{0,2},{0,3},{0,4}};
+    if constexpr (pos == EdgeFaceOrien::NEG) {
+        // u_{j+1/2}^- = -1/6 * \bar{u}_{j-1} + 5/6 * \bar{u}_j     + 1/3 * \bar{u}_{j+1}
+        return convolve(iMesh, tKernel1, tROIrc_vec1);
+    } else {
+        // u_{j+1/2}^+ =  1/6 * \bar{u}_{j}   + 5/6 * \bar{u}_{j+1} - 1/6 * \bar{u}_{j+2}
+        return convolve(iMesh, tKernel2, tROIrc_vec2);
+    }
+}
+
+template <typename NumericT, EdgeFaceOrien pos>
+/** @brief Finite Volumn 5 order estimation of the cell edge value.
+ * 
+ * @param  {const mesh<NumericT> &} iMesh : 
+ * @return {mesh<NumericT>}               : 
+ */
 mesh<NumericT> WENO_g(const mesh<NumericT> & iMesh)
 {
-    // Finite Volumn 5 order estimation of the cell edge value.
 
     viennacl::matrix<NumericT> tKernel0{1, 5}; 
     viennacl::matrix<NumericT> tKernel1{1, 5}; 
@@ -273,21 +303,9 @@ template <typename NumericT, FluxType fluxT>
  */
 mesh<NumericT> WENO(const mesh<NumericT> & iMesh, NumericT dt, NumericT dx)
 {
-    // Calculate u^-, u^+ for f(u) estimation at cell edge.
+    // Calculate u_{j+1/2}^-, u_{j+1/2}^+ for f(u) estimation at cell edge.
     mesh<NumericT> hatf{iMesh.get_size_num()};
-    {    
-    // // Calculate u^-, u^+ for f(u) estimation at cell edge.
-    // mesh<NumericT> hatf{iMesh.get_size_num()};
-    // {
-    // // Finite Volumn 3 order estimation of the cell edge value.
-    // viennacl::matrix<NumericT> tKernel1{1, 5}; tKernel1(0,1)=-1.0/6; tKernel1(0,2)=5.0/6; tKernel1(0,3) = 1.0/3;
-    // viennacl::matrix<NumericT> tKernel2{1, 5}; tKernel2(0,2)= 1.0/3; tKernel2(0,3)=5.0/6; tKernel2(0,4) =-1.0/6;
-    // std::vector<cord2<GridIntT>> tROIrc_vec1{{0,1},{0,2},{0,3}}, tROIrc_vec2{{0,2},{0,3},{0,4}};
-    // // u_{j+1/2}^- = -1/6 * \bar{u}_{j-1} + 5/6 * \bar{u}_j     + 1/3 * \bar{u}_{j+1}
-    // mesh<NumericT> u_neg = convolve(iMesh, tKernel1, tROIrc_vec1);
-    // // u_{j+1/2}^+ =  1/6 * \bar{u}_{j}   + 5/6 * \bar{u}_{j+1} - 1/6 * \bar{u}_{j+2}
-    // mesh<NumericT> u_pos = convolve(iMesh, tKernel2, tROIrc_vec2);
-    
+    {   
     // Finite Volumn 5 order estimation of the cell edge value.
     auto u_neg = WENO_g<NumericT, EdgeFaceOrien::NEG>(iMesh);
     auto u_pos = WENO_g<NumericT, EdgeFaceOrien::POS>(iMesh);
