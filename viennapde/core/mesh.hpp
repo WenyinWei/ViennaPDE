@@ -105,7 +105,7 @@ using DequeMat = std::deque<std::shared_ptr<viennacl::matrix<NumericT>>>;
 template <typename NumericT>
 class mesh : public DequeMat<NumericT>
 {
-public:
+private:
     friend class meshb<NumericT>;
     meshb<NumericT>* bdry_ptr_ = nullptr;
 public:

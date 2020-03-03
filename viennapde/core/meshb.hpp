@@ -17,15 +17,12 @@
 ============================================================================= */
 
 /** @file viennapde/core/meshb.hpp
-    @brief mesh with margin.
+    @brief Mesh with margin which is achieved by RAII mechanism.
 */
 
 #include "viennapde/core/mesh.hpp"
 
 
-
-
-// SECTION 01 Define the variable mesh (mesh) class
 namespace viennapde
 {
 
@@ -39,6 +36,7 @@ enum BoundaryCondition{
 template <typename NumericT>
 class meshb 
 {
+    friend class meshb<NumericT>;
 private: 
     viennapde::mesh<NumericT> & mesh_ref_; 
     cord3<size_t> margin_;
